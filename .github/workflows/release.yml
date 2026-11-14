@@ -8,6 +8,9 @@ on:
 permissions:
   contents: read
 
+# Release tags carry a `-supergameboy` suffix so they never look like upstream's versions, eg
+# v1.16.0-supergameboy, and the CHANGELOG heading stays plain `## [1.16.0]`.
+#
 # This fork has no macOS or device box to run `task tag` on, so upstream's "tag made by task tag"
 # gate is gone rather than satisfied with an annotation nobody checked. The build below, which
 # `publish` waits on, is what a release is gated by here: a tag that cannot build ships nothing.
@@ -94,7 +97,9 @@ jobs:
           ZIP: ${{ needs.build.outputs.zip }}
         run: |
           set -eu
-          awk -v head="## [${GITHUB_REF_NAME#v}]" '
+          version="${GITHUB_REF_NAME#v}"
+          version="${version%-supergameboy}"
+          awk -v head="## [${version}]" '
             index($0, head) == 1 { found = 1; next }
             found && /^## / { exit }
             found { print }

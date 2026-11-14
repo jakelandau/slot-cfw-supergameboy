@@ -57,8 +57,10 @@ build() {
 
 	path="$PATH"
 	if ! command -v hexdump >/dev/null 2>&1; then
-		hexdump_shim "$work/hexdump"
-		path="$work:$path"
+		# make runs in libretro/, so the shim has to be an absolute path.
+		shim="$(cd "$work" && pwd)/hexdump"
+		hexdump_shim "$shim"
+		path="$(dirname "$shim"):$path"
 	fi
 
 	version="$(sed -n 's/^VERSION[[:space:]]*:=[[:space:]]*//p' "$src/version.mk")"

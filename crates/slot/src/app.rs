@@ -4246,7 +4246,7 @@ impl App {
     ) -> (bool, [i32; 4]) {
         let frame = self.core_frame();
         let shown = video_mode::picture_for(platform, mode, scale, stretch, frame);
-        let (sizing, source) = (shown.sizing, shown.source);
+        let source = shown.source;
         let layout = self.layout_of(platform, shown);
         let crop =
             video_mode::picture_for(platform, VideoMode::Actual, Scale::Integer, stretch, frame)

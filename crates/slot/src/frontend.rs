@@ -46,6 +46,8 @@ pub struct Frontend {
     last: Instant,
     draws: Vec<Draw>,
     picture: Option<Picture>,
+    /// How many game frames the tracer has printed, capped by `trace_game`.
+    traced: u8,
     ds: crate::ds_view::DsView,
     polaroid_texes: Vec<TexId>,
     title_tex: Option<TexId>,
@@ -629,6 +631,7 @@ impl Frontend {
             last: now,
             draws: Vec::new(),
             picture: None,
+            traced: 0,
             ds: Default::default(),
             polaroid_texes: Vec::new(),
             title_tex: None,
@@ -1249,6 +1252,27 @@ impl Frontend {
         }
     }
 
+    /// Prints what the game pass was handed for its first few frames, so a card whose screen stays
+    /// black says which of them is wrong. `SLOT_TRACE=1` turns it on.
+    fn trace_game(
+        seen: u8,
+        picture: Option<(u32, u32)>,
+        canvas: (u32, u32),
+        compositor: &Compositor,
+        app: &crate::app::App,
+    ) {
+        let layout = app.game_layout();
+        eprintln!(
+        "slot: game frame {seen}: core picture {picture:?}, canvas {canvas:?}, texture {:?}, dropped {}, source {:?}, picture {:?}, layout rect {:?} panel {}",
+        compositor.game_source_size(),
+        compositor.game_dropped(),
+        app.source_rect(),
+        app.picture_rect(),
+        layout.rect,
+        layout.panel,
+    );
+    }
+
     fn prepare(&mut self, compositor: &mut Compositor) -> bool {
         compositor.set_blue_light(self.session.app().blue_light());
         compositor.set_dim(self.session.app().dim());
@@ -1267,6 +1291,16 @@ impl Frontend {
         compositor.set_game_source_size(cw, ch);
         compositor.set_game_source_rect(self.session.app().source_rect());
         compositor.set_game_layout(self.session.app().game_layout());
+        if self.traced < 3 && crate::session::trace() {
+            trace_game(
+                self.traced,
+                picture,
+                (cw, ch),
+                compositor,
+                self.session.app(),
+            );
+            self.traced += 1;
+        }
         compositor.set_placeholder_bezel(self.session.app().placeholder_bezel());
         self.grab_link_shot(compositor);
         compositor.begin_frame();

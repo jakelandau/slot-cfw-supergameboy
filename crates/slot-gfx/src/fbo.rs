@@ -382,6 +382,10 @@ impl Compositor {
         self.game.source_size()
     }
 
+    pub fn game_dropped(&self) -> u64 {
+        self.game.dropped()
+    }
+
     pub fn set_shake(&mut self, dx: f32) {
         self.shake = dx;
     }

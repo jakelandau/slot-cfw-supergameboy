@@ -47,6 +47,8 @@ pub struct GamePass {
     layout: [f32; 4],
     /// The size of the game texture, which is the size of the frame the core hands over.
     src_size: (u32, u32),
+    /// Frames turned away because they were smaller than the texture, which draws black.
+    dropped: u64,
 }
 
 impl GamePass {
@@ -113,11 +115,16 @@ impl GamePass {
             src: WHOLE_TEXTURE,
             layout: FULL,
             src_size: (SRC_W, SRC_H),
+            dropped: 0,
         })
     }
 
     pub fn source_size(&self) -> (u32, u32) {
         self.src_size
+    }
+
+    pub fn dropped(&self) -> u64 {
+        self.dropped
     }
 
     /// Resize the game texture to the frames the running core hands over. SameBoy's bordered
@@ -254,6 +261,7 @@ impl GamePass {
     pub fn upload(&mut self, xrgb8888: &[u8], quad: &Quad) {
         let (w, h) = self.src_size;
         if xrgb8888.len() < (w * h * 4) as usize {
+            self.dropped += 1;
             return;
         }
         let last = self.game[self.at];

@@ -1252,8 +1252,8 @@ impl Frontend {
         }
     }
 
-    /// Prints what the game pass was handed for its first few frames, so a card whose screen stays
-    /// black says which of them is wrong. `SLOT_TRACE=1` turns it on.
+    /// Prints what the game pass was handed for the first few frames, so a card whose screen stays
+    /// black says which of them is wrong.
     fn trace_game(
         seen: u8,
         picture: Option<(u32, u32)>,
@@ -1291,7 +1291,9 @@ impl Frontend {
         compositor.set_game_source_size(cw, ch);
         compositor.set_game_source_rect(self.session.app().source_rect());
         compositor.set_game_layout(self.session.app().game_layout());
-        if self.traced < 3 && crate::session::trace() {
+        // Unconditional and capped: a card whose screen stays black should say why in its own log,
+        // with no adb and no environment to set.
+        if self.traced < 3 {
             Self::trace_game(
                 self.traced,
                 picture,

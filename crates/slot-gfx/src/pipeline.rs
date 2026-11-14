@@ -262,6 +262,12 @@ impl GamePass {
         let (w, h) = self.src_size;
         if xrgb8888.len() < (w * h * 4) as usize {
             self.dropped += 1;
+            if self.dropped == 1 {
+                eprintln!(
+                    "slot-gfx: game texture is {w}x{h} but the frame is {} bytes, so nothing is drawn",
+                    xrgb8888.len()
+                );
+            }
             return;
         }
         let last = self.game[self.at];

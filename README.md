@@ -8,6 +8,7 @@ their label, read from the cart's own header.
 - Saves and the cart's clock carry over from Gambatte, including cards that already have them. Save states
   do not.
 - Game Boy link play still needs mGBA, and the in-game menu says so.
+- Releases here are tagged `vX.Y.Z-supergameboy`, so they never read as upstream versions.
 - Everything else is upstream's work. The original README follows.
 
 ---

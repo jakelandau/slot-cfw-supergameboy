@@ -84,7 +84,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          sparse-checkout: CHANGELOG.md
+          # The notes come from the changelog, versions.json from the scripts beside it.
+          sparse-checkout: |
+            CHANGELOG.md
+            .github/scripts
           sparse-checkout-cone-mode: false
 
       - uses: actions/download-artifact@v8

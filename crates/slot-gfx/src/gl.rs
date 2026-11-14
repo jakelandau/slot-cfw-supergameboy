@@ -29,6 +29,11 @@ pub fn gray_format() -> gl::types::GLenum {
 
 pub fn internal_format(format: gl::types::GLenum) -> gl::types::GLint {
     match (es(), format) {
+        // GLES has no BGRA storage format: the texture is stored as RGBA and `format` still tells
+        // the driver the byte order of what is uploaded into it. Handing GL_BGRA straight to
+        // glTexImage2D as the internal format leaves the texture unallocated on drivers that do
+        // not take EXT_texture_format_BGRA8888 there, and everything drawn with it comes out black.
+        (true, gl::BGRA) => gl::RGBA as gl::types::GLint,
         (true, _) => format as gl::types::GLint,
         (false, gl::RED) => gl::R8 as gl::types::GLint,
         (false, _) => gl::RGBA8 as gl::types::GLint,

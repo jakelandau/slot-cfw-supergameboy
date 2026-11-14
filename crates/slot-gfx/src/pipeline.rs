@@ -49,6 +49,8 @@ pub struct GamePass {
     src_size: (u32, u32),
     /// Frames turned away because they were smaller than the texture, which draws black.
     dropped: u64,
+    /// Whether the first upload has reported what the driver made of it.
+    probed: bool,
 }
 
 impl GamePass {
@@ -116,6 +118,7 @@ impl GamePass {
             layout: FULL,
             src_size: (SRC_W, SRC_H),
             dropped: 0,
+            probed: false,
         })
     }
 
@@ -270,6 +273,12 @@ impl GamePass {
             }
             return;
         }
+        let probe = !self.probed;
+        if probe {
+            self.probed = true;
+            // Clear whatever came before, so the error read back below is this upload's.
+            unsafe { while gl::GetError() != gl::NO_ERROR {} }
+        }
         let last = self.game[self.at];
         self.at = 1 - self.at;
         let game = self.game[self.at];
@@ -287,6 +296,13 @@ impl GamePass {
                 gl::BGRA,
                 gl::UNSIGNED_BYTE,
                 xrgb8888.as_ptr() as *const std::ffi::c_void,
+            );
+        }
+        if probe {
+            let error = unsafe { gl::GetError() };
+            eprintln!(
+                "slot-gfx: first upload {w}x{h}, GLES {}, GL error {error:#x}",
+                crate::gl::es()
             );
         }
         match self.blend {

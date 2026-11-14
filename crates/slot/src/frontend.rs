@@ -1292,7 +1292,7 @@ impl Frontend {
         compositor.set_game_source_rect(self.session.app().source_rect());
         compositor.set_game_layout(self.session.app().game_layout());
         if self.traced < 3 && crate::session::trace() {
-            trace_game(
+            Self::trace_game(
                 self.traced,
                 picture,
                 (cw, ch),

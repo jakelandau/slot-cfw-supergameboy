@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- SameBoy replaces Gambatte as the Game Boy and Game Boy Color core. Super Game Boy carts now show the borders and palettes the original hardware drew, as a 256x224 picture. Saves carry over from Gambatte, clock and all; save states do not. Press START on a Game Boy cart to switch between mGBA and SameBoy.
+- A custom Game Boy boot ROM now goes in `BIOS` as `dmg_boot.bin` and `cgb_boot.bin`, the names SameBoy reads. Without one, SameBoy's builtin boot ROMs run.
+- Cartridges that support Super Game Boy functions wear a small SGB seal on their label, read from the cart's own header. Game Boy Color carts never do.
+- Game Boy link play still needs mGBA, and the in-game menu says so.
+
 ## [1.15.3](https://github.com/slot-cfw/slot/releases/tag/v1.15.3)
 
 - Auto Load State was split into two rows: Resume on Insert and Resume on Power On. Having these two behaviors split allows for all the combinations that y'all have requested. ([#208](https://github.com/slot-cfw/slot/issues/208))

@@ -388,6 +388,7 @@ pub fn hand_reveal(cart: &Cart, frames: u32) -> Option<HandReveal> {
     }
     let (mut blank, written) = hand_parts(&s, cart)?;
     clip_to_silhouette(&s, &mut blank);
+    stamp_sgb(cart, &mut blank, s.label);
     let frames = crate::hand::reveal(&written, frames)
         .into_iter()
         .map(|(cov, pen)| (ink_rgba(written.colour, &cov), pen))
@@ -404,12 +405,13 @@ pub fn hand_reveal(cart: &Cart, frames: u32) -> Option<HandReveal> {
 pub fn cart_face_with(cart: &Cart, art: Option<Vec<u8>>) -> CartFace {
     let s = spec(shape_of(cart));
     if art.is_none() {
-        if let Some(face) = handwritten(&s, cart) {
+        if let Some(mut face) = handwritten(&s, cart) {
+            stamp_sgb(cart, &mut face, s.label);
             return face;
         }
     }
     let mut face = shell_face(&s, &shell_for(cart));
-    let label = match art {
+    let mut label = match art {
         Some(rgba) => rgba,
         #[cfg(feature = "nds")]
         None if cart.platform == Platform::Nds => banner_label(&s, cart),
@@ -420,7 +422,79 @@ pub fn cart_face_with(cart: &Cart, art: Option<Vec<u8>>) -> CartFace {
     };
     paste_label(&s, &mut face, &label);
     clip_to_silhouette(&s, &mut face);
+    stamp_sgb(cart, &mut face, s.label);
     face
+}
+
+/// A small seal on the label saying the cart draws Super Game Boy borders and palettes, the way a
+/// real one prints it. The header is the only authority, and the core reads the same bytes.
+const SGB_SEAL: [u8; 3] = [0x18, 0x2a, 0x5c];
+const SGB_SEAL_INK: [u8; 3] = [0xf6, 0xf2, 0xe6];
+
+fn stamp_sgb(cart: &Cart, face: &mut CartFace, (lx, ly, lw, lh): (u32, u32, u32, u32)) {
+    if cart.platform.hardware() == Platform::Gba || !slot_store::gb::is_sgb(&cart.rom) {
+        return;
+    }
+    let (w, h) = (lw, lh);
+    let Some(font) = text::label_font() else {
+        return;
+    };
+    let bh = (h / 11).clamp(12, 26);
+    let px = bh as f32 * 0.72;
+    let tracking = (px * 0.10).round();
+    let pad = (bh as f32 * 0.45).round();
+    let bw = (text::line_width(font, "SGB", px, tracking) + 2.0 * pad).ceil() as u32;
+    if bw + 4 >= w || bh + 4 >= h {
+        return;
+    }
+    let mut seal = vec![0u8; (bw * bh * 4) as usize];
+    round_seal(&mut seal, bw, bh);
+    let layout = text::Layout {
+        lines: vec!["SGB".to_string()],
+        px,
+        tracking,
+    };
+    text::draw_left(&mut seal, bw, bh, &layout, pad, SGB_SEAL_INK);
+    let inset = (h / 24).max(3);
+    let (x0, y0) = (lx + inset, ly + h - bh - inset);
+    let pitch = face.w;
+    over(&mut face.rgba, pitch, &seal, (bw, bh), (x0, y0));
+}
+
+/// The seal's body, a rounded bar, with the rounded ends antialiased into its own alpha.
+fn round_seal(dst: &mut [u8], w: u32, h: u32) {
+    let r = (h as f32 - 1.0) / 2.0;
+    for y in 0..h {
+        for x in 0..w {
+            let (fx, fy) = (x as f32 + 0.5, y as f32 + 0.5);
+            let (cx, cy) = (fx.clamp(r, w as f32 - r), fy.clamp(r, h as f32 - r));
+            let cover = (r + 0.5 - ((fx - cx).powi(2) + (fy - cy).powi(2)).sqrt()).clamp(0.0, 1.0);
+            let at = ((y * w + x) * 4) as usize;
+            dst[at..at + 3].copy_from_slice(&SGB_SEAL);
+            dst[at + 3] = (cover * 255.0).round() as u8;
+        }
+    }
+}
+
+/// Composite `src` over `dst` at an offset, alpha and all.
+fn over(dst: &mut [u8], dw: u32, src: &[u8], (sw, sh): (u32, u32), (x0, y0): (u32, u32)) {
+    for y in 0..sh {
+        for x in 0..sw {
+            let s = ((y * sw + x) * 4) as usize;
+            let a = src[s + 3] as u32;
+            if a == 0 {
+                continue;
+            }
+            let d = (((y + y0) * dw + x + x0) * 4) as usize;
+            let under = dst[d + 3] as u32 * (255 - a) / 255;
+            let out = a + under;
+            for c in 0..3 {
+                dst[d + c] =
+                    ((src[s + c] as u32 * a + dst[d + c] as u32 * under + out / 2) / out) as u8;
+            }
+            dst[d + 3] = out as u8;
+        }
+    }
 }
 
 fn clip_to_silhouette(s: &Spec, face: &mut CartFace) {

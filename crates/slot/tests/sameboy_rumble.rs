@@ -24,25 +24,25 @@ fn rumble_cart(dir: &std::path::Path) -> PathBuf {
 }
 
 #[test]
-fn a_rumble_cart_on_gambatte_reaches_the_motor() {
+fn a_rumble_cart_on_sameboy_reaches_the_motor() {
     let _g = common::core_lock();
-    let dylib = common::repo_root().join("vendor/gambatte_libretro.dylib");
+    let dylib = common::repo_root().join("vendor/sameboy_libretro.dylib");
     if !dylib.exists() {
-        eprintln!("no host gambatte, skipping");
+        eprintln!("no host sameboy, skipping");
         return;
     }
     let root = tempfile::tempdir().expect("tempdir");
     let rom = rumble_cart(root.path());
     let mut core = open_core_for_palette(
         root.path(),
-        Core::Gambatte,
+        Core::Sameboy,
         Platform::Gb,
         "",
         false,
         None,
         &[dylib],
     );
-    core.load(&rom).expect("gambatte refused the cart");
+    core.load(&rom).expect("sameboy refused the cart");
     let rumble = core.rumble();
     let mut felt = 0;
     for _ in 0..10 {
@@ -51,6 +51,6 @@ fn a_rumble_cart_on_gambatte_reaches_the_motor() {
     }
     assert!(
         felt > 0,
-        "the cart drove its motor and gambatte passed nothing on"
+        "the cart drove its motor and sameboy passed nothing on"
     );
 }

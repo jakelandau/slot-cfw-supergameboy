@@ -38,14 +38,13 @@ pub(crate) struct Ghost {
     fbo: [gl::types::GLuint; 2],
     shown: usize,
     primed: bool,
+    size: (u32, u32),
 }
 
 impl Ghost {
     pub fn new() -> Result<Self, crate::surface::GfxError> {
         let prog = crate::shaders::program(crate::shaders::BLIT_VERT, crate::shaders::GHOST_FRAG)?;
-        let tex = [0, 1].map(|_| {
-            crate::gl::texture(SRC_W, SRC_H, gl::NEAREST, gl::CLAMP_TO_EDGE, gl::RGBA, None)
-        });
+        let tex = Self::textures(SRC_W, SRC_H);
         let mut fbo = [0; 2];
         unsafe {
             gl::GenFramebuffers(2, fbo.as_mut_ptr());
@@ -79,7 +78,36 @@ impl Ghost {
             fbo,
             shown: 0,
             primed: false,
+            size: (SRC_W, SRC_H),
         })
+    }
+
+    fn textures(w: u32, h: u32) -> [gl::types::GLuint; 2] {
+        [0, 1].map(|_| crate::gl::texture(w, h, gl::NEAREST, gl::CLAMP_TO_EDGE, gl::RGBA, None))
+    }
+
+    /// Follow the game texture when a core hands over frames of a different size.
+    pub fn resize(&mut self, w: u32, h: u32) {
+        if w == 0 || h == 0 || (w, h) == self.size {
+            return;
+        }
+        unsafe {
+            gl::DeleteTextures(2, self.tex.as_ptr());
+            self.tex = Self::textures(w, h);
+            for (f, t) in self.fbo.iter().zip(self.tex) {
+                gl::BindFramebuffer(gl::FRAMEBUFFER, *f);
+                gl::FramebufferTexture2D(
+                    gl::FRAMEBUFFER,
+                    gl::COLOR_ATTACHMENT0,
+                    gl::TEXTURE_2D,
+                    t,
+                    0,
+                );
+            }
+            gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+        }
+        self.size = (w, h);
+        self.primed = false;
     }
 
     pub fn reset(&mut self) {
@@ -109,7 +137,7 @@ impl Ghost {
             gl::GetIntegerv(gl::FRAMEBUFFER_BINDING, &mut fb);
             gl::GetIntegerv(gl::VIEWPORT, view.as_mut_ptr());
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.fbo[next]);
-            gl::Viewport(0, 0, SRC_W as i32, SRC_H as i32);
+            gl::Viewport(0, 0, self.size.0 as i32, self.size.1 as i32);
             gl::UseProgram(self.prog);
             gl::Uniform2f(self.u_keep, keep[0], keep[1]);
             gl::ActiveTexture(gl::TEXTURE1);

@@ -6,6 +6,9 @@ const TITLE_OFF: u64 = 0x134;
 const TITLE_LEN: usize = 11;
 
 const CGB_OFF: u64 = 0x143;
+/// `0x03` here says the cart supports Super Game Boy functions. SameBoy reads exactly these two
+/// bytes to decide whether to boot the cart as a Super Game Boy, so slot asks the same question.
+const SGB_OFF: u64 = 0x146;
 
 const CODE_OFF: usize = 0x13f;
 const DEST_OFF: usize = 0x14a;
@@ -17,6 +20,9 @@ pub struct Header {
     pub code: String,
     pub cgb: u8,
     pub japan: bool,
+    /// The cart draws Super Game Boy borders and palettes when run on that hardware. Only a cart
+    /// that runs as a monochrome Game Boy can: a Game Boy Color cart never does.
+    pub sgb: bool,
 }
 
 impl Header {
@@ -28,6 +34,7 @@ impl Header {
         let is_code = code
             .iter()
             .all(|b| b.is_ascii_uppercase() || b.is_ascii_digit());
+        let cgb = bytes[CGB_OFF as usize];
         Some(Header {
             title: String::from_utf8_lossy(&title[..end]).trim().to_string(),
             code: if is_code {
@@ -35,8 +42,9 @@ impl Header {
             } else {
                 String::new()
             },
-            cgb: bytes[CGB_OFF as usize],
+            cgb,
             japan: bytes[DEST_OFF] == 0,
+            sgb: sgb_of(cgb, bytes[SGB_OFF as usize]),
         })
     }
 
@@ -68,6 +76,15 @@ pub fn title(rom: &Path) -> Option<String> {
     let end = buf.iter().position(|b| *b == 0).unwrap_or(buf.len());
     let text = std::str::from_utf8(&buf[..end]).ok()?.trim();
     (!text.is_empty()).then(|| text.to_string())
+}
+
+/// Whether the cart supports Super Game Boy functions, read from its header cache.
+pub fn is_sgb(rom: &Path) -> bool {
+    cached_header(rom).is_some_and(|h| h.sgb)
+}
+
+fn sgb_of(cgb: u8, sgb: u8) -> bool {
+    !matches!(cgb, 0x80 | 0xc0) && sgb == 0x03
 }
 
 pub fn cgb_flag(rom: &Path) -> Option<u8> {

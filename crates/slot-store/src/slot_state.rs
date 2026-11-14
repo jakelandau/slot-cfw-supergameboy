@@ -401,7 +401,7 @@ impl Blending {
 
     pub fn choices(core: Core) -> &'static [Blending] {
         match core {
-            Core::Mgba | Core::Gpsp | Core::Gambatte => &Blending::ALL,
+            Core::Mgba | Core::Gpsp | Core::Sameboy => &Blending::ALL,
             #[cfg(feature = "nds")]
             Core::Dsperate => &[Blending::Off],
         }
@@ -659,7 +659,7 @@ impl Default for SlotState {
             battery_display: BatteryDisplay::Both,
             wifi_off: false,
             nickname: String::new(),
-            gb_core: Core::Gambatte,
+            gb_core: Core::Sameboy,
             left_stick_dpad: true,
             lid_off_min: None,
             bezel_gba: BezelPick::Ags102,

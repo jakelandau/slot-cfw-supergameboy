@@ -120,12 +120,13 @@ pub fn save(root: &Path) -> std::io::Result<()> {
         };
         let line = match &entry.known {
             Known::Gb(Some(h)) => format!(
-                "G\t{}\t{size}\t{mtime}\t{}\t{}\t{}\t{}",
+                "G\t{}\t{size}\t{mtime}\t{}\t{}\t{}\t{}\t{}",
                 clean(rel),
                 h.cgb,
                 u8::from(h.japan),
                 clean(&h.code),
-                clean(&h.title)
+                clean(&h.title),
+                u8::from(h.sgb)
             ),
             Known::Gb(None) => format!("N\t{}\t{size}\t{mtime}", clean(rel)),
             Known::Gba(code) => format!("A\t{}\t{size}\t{mtime}\t{}", clean(rel), clean(code)),
@@ -160,11 +161,14 @@ fn parse(root: &Path, line: &str) -> Option<(PathBuf, Entry)> {
         _ => None,
     };
     let known = match (*f.first()?, f.len()) {
-        ("G", 8) => Known::Gb(Some(Header {
+        // A cache written before the Super Game Boy flag existed has no ninth column, so it is
+        // dropped and the header read again rather than trusted with a wrong answer.
+        ("G", 9) => Known::Gb(Some(Header {
             cgb: f[4].parse().ok()?,
             japan: f[5] == "1",
             code: f[6].to_string(),
             title: f[7].to_string(),
+            sgb: f[8] == "1",
         })),
         ("N", 4) => Known::Gb(None),
         ("A", 5) => Known::Gba(f[4].to_string()),

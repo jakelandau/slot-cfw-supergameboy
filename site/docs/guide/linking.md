@@ -73,6 +73,6 @@ If slot says "Please switch to gpSP", the game needs the wireless adapter. Chang
 | The cable came loose | A cable link connected, then dropped. |
 | Lost the connection | A wireless adapter link connected, then dropped. |
 | BIOS does not match | One device has a `gba_bios.bin` and the other doesn't. The link ends. |
-| Please switch to mGBA | The game is on Gambatte, which can't link. Change the emulator with <kbd>START</kbd> on the shelf. |
+| Please switch to mGBA | The game is on SameBoy, which can't link. Change the emulator with <kbd>START</kbd> on the shelf. |
 | Please switch to gpSP | The game needs the wireless adapter, or only links on gpSP. |
 | No link support | This game can't link on the emulator it's on. |

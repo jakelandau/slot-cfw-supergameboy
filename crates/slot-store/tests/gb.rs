@@ -130,3 +130,29 @@ fn the_header_is_read_from_the_file_and_a_short_one_is_none() {
     std::fs::write(&short, [0u8; 0x144]).unwrap();
     assert!(slot_store::gb::header(&short).is_none());
 }
+
+#[test]
+fn only_a_monochrome_cart_can_ask_for_super_game_boy_functions() {
+    let d = tempfile::tempdir().unwrap();
+    let write = |name: &str, cgb: u8, sgb: u8| {
+        let mut rom = vec![0u8; 0x150];
+        rom[0x143] = cgb;
+        rom[0x146] = sgb;
+        let path = d.path().join(name);
+        std::fs::write(&path, rom).unwrap();
+        path
+    };
+    let header = |path: &std::path::Path| slot_store::gb::header(path).expect("header");
+    assert!(header(&write("sgb.gb", 0x00, 0x03)).sgb);
+    assert!(!header(&write("plain.gb", 0x00, 0x00)).sgb);
+    assert!(
+        !header(&write("colour.gbc", 0xc0, 0x03)).sgb,
+        "a Game Boy Color cart never draws a Super Game Boy border"
+    );
+    assert!(
+        !header(&write("enhanced.gb", 0x80, 0x03)).sgb,
+        "a colour enhanced cart runs as a colour game"
+    );
+    assert!(slot_store::gb::is_sgb(&d.path().join("sgb.gb")));
+    assert!(!slot_store::gb::is_sgb(&d.path().join("plain.gb")));
+}

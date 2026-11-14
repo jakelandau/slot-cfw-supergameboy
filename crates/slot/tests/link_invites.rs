@@ -888,17 +888,17 @@ fn a_failed_join_goes_back_to_the_kids_game() {
 }
 
 #[test]
-fn gambatte_switches_to_mgba_for_the_link() {
+fn sameboy_switches_to_mgba_for_the_link() {
     let d = common::tmp_root_with_gb_carts(&["Tetris", "Zzz"]);
-    slot_store::write_selected_core(d.path(), Platform::Gb, "Tetris", Core::Gambatte)
+    slot_store::write_selected_core(d.path(), Platform::Gb, "Tetris", Core::Sameboy)
         .expect("write core");
     let mut kid = kid_session(
         d,
         kid_slot(slot_store::KidMode::Shelves, Some(("Tetris", Platform::Gb))),
-        (Platform::Gb, Core::Gambatte, "Tetris"),
+        (Platform::Gb, Core::Sameboy, "Tetris"),
         Far::Waits,
     );
-    kid.ready_on(Core::Gambatte);
+    kid.ready_on(Core::Sameboy);
     let rom = std::fs::read_dir(kid.d.path().join("Games").join(Platform::Gb.dir_name()))
         .expect("list GB")
         .filter_map(Result::ok)

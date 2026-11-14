@@ -807,15 +807,15 @@ fn choosing_mgba_on_a_game_boy_cart_writes_it() {
     app.apply(Action::GbaDown(Btn::Right));
     assert_eq!(
         app.core_picker(),
-        Some(Core::Gambatte),
-        "right from Gambatte wrapped round"
+        Some(Core::Sameboy),
+        "right from SameBoy wrapped round"
     );
     let_it_hop(&mut app);
     app.apply(Action::GbaDown(Btn::Left));
     assert_eq!(app.core_picker(), Some(Core::Mgba));
     app.apply(Action::GbaDown(Btn::A));
     assert_eq!(
-        slot_store::core_for_platform(d.path(), "Tetris", Platform::Gb, Core::Gambatte),
+        slot_store::core_for_platform(d.path(), "Tetris", Platform::Gb, Core::Sameboy),
         Core::Mgba
     );
 
@@ -1412,15 +1412,15 @@ fn a_game_boy_cart_seats_the_pak_chip_in_the_pak_footprints() {
     let_it_open(&mut app);
     let out = frame(&app);
 
-    let gambatte = Core::Gambatte.index();
+    let sameboy = Core::Sameboy.index();
     let mgba = Core::Mgba.index();
-    let (_, chip, _) = turned_at(&out, gb_chips[gambatte]).expect("the pak chip is not seated");
-    let (_, right) = tex_at(&out, gb_sockets[gambatte]).expect("the Gambatte footprint is missing");
+    let (_, chip, _) = turned_at(&out, gb_chips[sameboy]).expect("the pak chip is not seated");
+    let (_, right) = tex_at(&out, gb_sockets[sameboy]).expect("the SameBoy footprint is missing");
     let (_, left) = tex_at(&out, gb_sockets[mgba]).expect("the mGBA footprint is missing");
     assert!(left[0] < right[0], "mGBA must keep the left footprint");
     assert!(
         (chip[0] - right[0]).abs() < 4.0 && (chip[1] - right[1]).abs() < 4.0,
-        "the chip at {chip:?} is not over the Gambatte footprint at {right:?}"
+        "the chip at {chip:?} is not over the SameBoy footprint at {right:?}"
     );
     for t in f.sockets.iter().chain(f.chips.iter()) {
         assert!(

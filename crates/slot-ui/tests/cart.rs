@@ -24,8 +24,13 @@ fn tmp_root() -> TempDir {
 }
 
 fn write_gb_rom(d: &TempDir, dir: &str, name: &str, cgb: u8) {
+    write_gb_header(d, dir, name, cgb, 0);
+}
+
+fn write_gb_header(d: &TempDir, dir: &str, name: &str, cgb: u8, sgb: u8) {
     let mut rom = vec![0u8; 0x150];
     rom[0x143] = cgb;
+    rom[0x146] = sgb;
     let games = d.path().join("Games").join(dir);
     std::fs::create_dir_all(&games).expect("create games dir");
     std::fs::write(games.join(name), rom).expect("write rom");
@@ -692,4 +697,76 @@ fn sheet(cart: &slot_store::Cart, rgb: [u8; 3]) -> Vec<u8> {
     (0..w * h)
         .flat_map(|_| [rgb[0], rgb[1], rgb[2], 255])
         .collect()
+}
+
+fn write_solid_label(d: &TempDir, dir: &str, name: &str, w: u32, h: u32) {
+    let labels = d.path().join("Labels").join(dir);
+    std::fs::create_dir_all(&labels).expect("create labels dir");
+    let f = std::fs::File::create(labels.join(name)).expect("create label");
+    let mut enc = png::Encoder::new(std::io::BufWriter::new(f), w, h);
+    enc.set_color(png::ColorType::Rgb);
+    enc.set_depth(png::BitDepth::Eight);
+    let rgb = [0x40u8, 0x60, 0x90].repeat((w * h) as usize);
+    enc.write_header()
+        .expect("png header")
+        .write_image_data(&rgb)
+        .expect("png data");
+}
+
+#[test]
+fn a_super_game_boy_cart_wears_a_seal_that_says_so() {
+    let d = tmp_root();
+    write_gb_header(&d, "GB", "Plain.gb", 0x00, 0x00);
+    write_gb_header(&d, "GB", "Bordered.gb", 0x00, 0x03);
+    write_gb_header(&d, "GBC", "Plain Colour.gbc", 0xc0, 0x00);
+    write_gb_header(&d, "GBC", "Flagged Colour.gbc", 0xc0, 0x03);
+    for (dir, stem) in [
+        ("GB", "Plain"),
+        ("GB", "Bordered"),
+        ("GBC", "Plain Colour"),
+        ("GBC", "Flagged Colour"),
+    ] {
+        write_solid_label(&d, dir, &format!("{stem}.png"), GB_LABEL_W, GB_LABEL_H);
+    }
+    let carts = scan(d.path()).expect("scan");
+    let face = |stem: &str| cart_face(carts.iter().find(|c| c.stem == stem).expect("cart"));
+
+    let (plain, bordered) = (face("Plain"), face("Bordered"));
+    assert_eq!((bordered.w, bordered.h), (plain.w, plain.h));
+    let (lx, ly, lw, lh) = (GB_LABEL_X, GB_LABEL_Y, GB_LABEL_W, GB_LABEL_H);
+    let at = |face: &slot_ui::CartFace, x: u32, y: u32| {
+        let i = ((y * face.w + x) * 4) as usize;
+        [
+            face.rgba[i],
+            face.rgba[i + 1],
+            face.rgba[i + 2],
+            face.rgba[i + 3],
+        ]
+    };
+    // The seal is stamped in the bottom left of the pak's label.
+    let mut stamped = 0;
+    for y in 0..lh / 3 {
+        for x in 0..lw / 2 {
+            let (px, py) = (lx + x, ly + lh - 1 - y);
+            if at(&bordered, px, py) != at(&plain, px, py) {
+                stamped += 1;
+            }
+        }
+    }
+    assert!(
+        stamped > 200,
+        "no seal on the bordered cart: {stamped} pixels"
+    );
+    // And nowhere else.
+    for y in 0..lh / 3 {
+        for x in lw / 2..lw {
+            assert_eq!(
+                at(&bordered, lx + x, ly + y),
+                at(&plain, lx + x, ly + y),
+                "the seal spilled onto the top right of the label"
+            );
+        }
+    }
+    // A Game Boy Color cart draws no Super Game Boy border, flag or no flag.
+    assert_eq!(face("Flagged Colour").rgba, face("Plain Colour").rgba);
 }

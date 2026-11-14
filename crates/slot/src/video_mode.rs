@@ -40,35 +40,92 @@ pub fn write_video_mode(root: &Path, stem: &str, mode: VideoMode) -> std::io::Re
     ini::write(root, VIDEO_MODE_FILE, stem, mode.as_str())
 }
 
+/// What the frontend shows of a core's frame, and where in the game texture it lives.
+#[derive(Copy, Clone, PartialEq, Debug)]
+pub struct Picture {
+    pub sizing: Sizing,
+    /// The region of the game texture that fills the band, in texture coordinates.
+    pub source: [f32; 4],
+    /// The size the picture lays out at: the canvas the core draws on, or just the game screen
+    /// when the mode crops to it.
+    pub size: (u32, u32),
+    /// The frame the core actually draws inside that picture.
+    pub content: (u32, u32),
+}
+
+/// The canvas a frame is drawn on: the platform's own, grown when a core draws a bigger picture,
+/// which only SameBoy's bordered Super Game Boy frames are.
+pub fn canvas_of(frame: (u32, u32)) -> (u32, u32) {
+    (frame.0.max(SRC_W), frame.1.max(SRC_H))
+}
+
+/// `frame` is the picture the core draws: the platform's own unless a Super Game Boy border makes
+/// it bigger, in which case it fills its canvas rather than sitting inside a larger one.
 pub fn picture_for(
     platform: Platform,
     mode: VideoMode,
     scale: Scale,
     stretch: Stretch,
-) -> (Sizing, [f32; 4]) {
+    frame: (u32, u32),
+) -> Picture {
+    let content = frame;
+    let canvas = canvas_of(content);
+    let (cw, ch) = canvas;
+    let crop = |w: u32, h: u32| {
+        let x = (cw - w) as f32 / 2.0 / cw as f32;
+        let y = (ch - h) as f32 / 2.0 / ch as f32;
+        [x, y, w as f32 / cw as f32, h as f32 / ch as f32]
+    };
+    let whole = Picture {
+        sizing: Sizing::Band,
+        source: WHOLE_TEXTURE,
+        size: canvas,
+        content,
+    };
     #[cfg(feature = "nds")]
     if platform == Platform::Nds {
-        return (Sizing::Fit, WHOLE_TEXTURE);
+        return Picture {
+            sizing: Sizing::Fit,
+            source: WHOLE_TEXTURE,
+            size: canvas,
+            content,
+        };
     }
-    let (w, h) = platform.picture();
-    let x = SRC_W.saturating_sub(w) as f32 / 2.0 / SRC_W as f32;
-    let y = SRC_H.saturating_sub(h) as f32 / 2.0 / SRC_H as f32;
-    let (fw, fh) = (w as f32 / SRC_W as f32, h as f32 / SRC_H as f32);
-    let crop = [x, y, fw, fh];
-    let window = [x, 0.0, fw, 1.0];
     if platform.hardware() == Platform::Gba {
         let sizing = match scale {
             Scale::Integer => Sizing::Integer,
             Scale::FullScreen => Sizing::Panel,
             Scale::SpFrame | Scale::Fit => Sizing::Band,
         };
-        return (sizing, WHOLE_TEXTURE);
+        return Picture {
+            sizing,
+            source: WHOLE_TEXTURE,
+            size: canvas,
+            content,
+        };
     }
+    let screen = |sizing| Picture {
+        sizing,
+        source: crop(content.0, content.1),
+        size: content,
+        content,
+    };
     match (mode, scale, stretch) {
-        (VideoMode::Actual, Scale::Integer, _) => (Sizing::Integer, crop),
-        (VideoMode::Actual, Scale::Fit, _) => (Sizing::Fit, crop),
-        (VideoMode::Actual, _, _) => (Sizing::Band, WHOLE_TEXTURE),
-        (VideoMode::Stretch, _, Stretch::Classic) => (Sizing::Band, window),
-        (VideoMode::Stretch, _, Stretch::FullScreen) => (Sizing::Panel, crop),
+        (VideoMode::Actual, Scale::Integer, _) => screen(Sizing::Integer),
+        (VideoMode::Actual, Scale::Fit, _) => screen(Sizing::Fit),
+        (VideoMode::Actual, _, _) => whole,
+        (VideoMode::Stretch, _, Stretch::Classic) => {
+            let x = (cw - content.0) as f32 / 2.0 / cw as f32;
+            let w = content.0 as f32 / cw as f32;
+            Picture {
+                sizing: Sizing::Band,
+                source: [x, 0.0, w, 1.0],
+                ..whole
+            }
+        }
+        (VideoMode::Stretch, _, Stretch::FullScreen) => Picture {
+            sizing: Sizing::Panel,
+            ..screen(Sizing::Panel)
+        },
     }
 }

@@ -237,10 +237,10 @@ fn lists_for(platform: Platform, tag: &str, file: &str) -> Vec<String> {
 }
 
 #[test]
-fn a_gb_game_lists_mgba_and_gambatte_only() {
+fn a_gb_game_lists_mgba_and_sameboy_only() {
     assert_eq!(
         lists_for(Platform::Gb, "GB", "Alpha.gb"),
-        ["mgba", "gambatte"]
+        ["mgba", "sameboy"]
     );
 }
 

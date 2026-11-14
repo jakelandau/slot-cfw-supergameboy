@@ -107,14 +107,19 @@ pub fn has_real_bios(root: &Path) -> bool {
 
 const GB_BIOS: (&str, usize) = ("gb_bios.bin", 0x100);
 const GBC_BIOS: (&str, usize) = ("gbc_bios.bin", 0x900);
+/// SameBoy reads its boot ROMs under these names instead.
+const DMG_BOOT: (&str, usize) = ("dmg_boot.bin", 0x100);
+const CGB_BOOT: (&str, usize) = ("cgb_boot.bin", 0x900);
 
 pub fn bios_crc(root: &Path, platform: Platform, core: Core) -> u32 {
     let (name, len) = match (platform.hardware(), core) {
         (Platform::Gba, Core::Mgba | Core::Gpsp) if has_real_bios(root) => {
             (BIOS_FILE, BIOS_BYTES as usize)
         }
-        (Platform::Gb, Core::Mgba | Core::Gambatte) => GB_BIOS,
-        (Platform::Gbc, Core::Mgba | Core::Gambatte) => GBC_BIOS,
+        (Platform::Gb, Core::Mgba) => GB_BIOS,
+        (Platform::Gbc, Core::Mgba) => GBC_BIOS,
+        (Platform::Gb, Core::Sameboy) => DMG_BOOT,
+        (Platform::Gbc, Core::Sameboy) => CGB_BOOT,
         _ => return 0,
     };
     match std::fs::read(bios_dir(root).join(name)) {

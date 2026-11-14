@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use slot_gfx::{Canvas, GameLayout, Sizing, OUT_H, OUT_W, WHOLE_TEXTURE};
+use slot_gfx::{Canvas, GameLayout, Sizing, OUT_H, OUT_W};
 use slot_input::{Action, Btn, RawEvent, MENU_DOUBLE_TAP_MS, MUTE_CHORD_MS};
 use slot_power::{Battery, Charge, LedState, LidPolicy, Power, RepairResult};
 use slot_retro::LinkChannel;
@@ -733,6 +733,9 @@ pub struct App {
     invite_faces: Option<InviteFaces>,
     platform: Platform,
     named_core: bool,
+    /// The frame the running core draws, once it has loaded. Everything but SameBoy's bordered
+    /// Super Game Boy frame is 240x160.
+    core_video: Option<(u32, u32)>,
     video_mode: VideoMode,
     link: Option<LinkSession>,
     sfx: Option<Sfx>,
@@ -1268,6 +1271,7 @@ impl App {
             invite_faces: None,
             platform: Platform::default(),
             named_core: false,
+            core_video: None,
             video_mode: VideoMode::default(),
             link: None,
             sfx: None,
@@ -3341,16 +3345,35 @@ impl App {
             Platform::Gbc => &self.state.bezel_gbc,
         };
         let choices = self.bezel_choices(platform);
-        if choices.contains(pick) {
-            return pick.clone();
-        }
-        let BezelPick::File(name) = pick else {
-            return BezelPick::None;
+        let resolved = if choices.contains(pick) {
+            pick.clone()
+        } else {
+            let BezelPick::File(name) = pick else {
+                return BezelPick::None;
+            };
+            slot_store::bezel_for_scale(name, self.resolved_scale(platform))
+                .map(BezelPick::File)
+                .filter(|swapped| choices.contains(swapped))
+                .unwrap_or(BezelPick::None)
         };
-        slot_store::bezel_for_scale(name, self.resolved_scale(platform))
-            .map(BezelPick::File)
-            .filter(|swapped| choices.contains(swapped))
-            .unwrap_or(BezelPick::None)
+        // A bordered Super Game Boy frame is a frame of its own, so slot's built-in bezel would
+        // draw a second one around it. A bezel file you chose yourself is left alone.
+        let built_in = !matches!(resolved, BezelPick::File(_));
+        if built_in && platform == self.playing_platform() && self.bordered_sgb() {
+            return BezelPick::None;
+        }
+        resolved
+    }
+
+    /// True when the running core draws a Super Game Boy border, which is a bigger picture than
+    /// the platform's own. Two DS screens stacked are bigger by design, so they do not count.
+    fn bordered_sgb(&self) -> bool {
+        if !matches!(self.playing_platform(), Platform::Gb | Platform::Gbc) {
+            return false;
+        }
+        let (fw, fh) = self.core_frame();
+        let (pw, ph) = self.playing_platform().picture();
+        fw > pw || fh > ph
     }
 
     pub fn overlay_frame(&self) -> (u32, u32) {
@@ -3477,11 +3500,11 @@ impl App {
 
     fn picture_in_band(&self, layout: GameLayout) -> (f32, f32) {
         let [_, y, _, h] = layout.rect;
-        let (top, tall) = match self.source_rect() == WHOLE_TEXTURE {
+        let picture = self.picture();
+        let (top, tall) = match picture.content.1 < picture.size.1 {
             true => {
-                let rows = self.playing_platform().picture().1 as f32;
-                let src = slot_gfx::SRC_H as f32;
-                ((src - rows) / 2.0 / src, rows / src)
+                let (rows, canvas) = (picture.content.1 as f32, picture.size.1 as f32);
+                ((canvas - rows) / 2.0 / canvas, rows / canvas)
             }
             false => (0.0, 1.0),
         };
@@ -3500,20 +3523,19 @@ impl App {
         if self.picture_fills() || self.table_panel() {
             return None;
         }
-        if self.resolved_bezel(self.playing_platform()) == BezelPick::Default
-            && self.bezel_art().is_none()
-        {
-            return None;
+        match self.resolved_bezel(self.playing_platform()) {
+            BezelPick::None | BezelPick::Ags102 => None,
+            BezelPick::Default if self.bezel_art().is_none() => None,
+            _ => self.game_bezel,
         }
-        self.game_bezel
     }
 
     pub fn bezel_art(&self) -> Option<BezelArt> {
-        if self.picture_fills() || self.table_panel() {
+        if self.picture_fills() || self.table_panel() || self.bordered_sgb() {
             return None;
         }
         let gba = self.playing_platform().hardware() == Platform::Gba;
-        match (self.picture().0, self.framed_panel()) {
+        match (self.picture().sizing, self.framed_panel()) {
             (Sizing::Band, _) => Some(BezelArt::Default),
             _ if gba => None,
             (Sizing::Integer, false) => Some(BezelArt::Default),
@@ -4146,17 +4168,38 @@ impl App {
         self.video_mode = mode;
     }
 
-    pub fn source_rect(&self) -> [f32; 4] {
-        self.picture().1
+    pub fn set_core_video(&mut self, picture: Option<(u32, u32)>) {
+        self.core_video = picture;
     }
 
-    fn picture(&self) -> (Sizing, [f32; 4]) {
+    pub fn source_rect(&self) -> [f32; 4] {
+        self.picture().source
+    }
+
+    /// The canvas the core draws on: the platform's own, grown when the core draws a bigger
+    /// picture, which only a bordered Super Game Boy frame is.
+    pub fn game_canvas(&self) -> (u32, u32) {
+        video_mode::canvas_of(self.core_frame())
+    }
+
+    /// The size the picture lays out at: the canvas, or just the game screen when the video mode
+    /// crops to it.
+    pub fn picture_size(&self) -> (u32, u32) {
+        self.picture().size
+    }
+
+    fn core_frame(&self) -> (u32, u32) {
+        self.core_video.unwrap_or_else(|| self.platform.picture())
+    }
+
+    fn picture(&self) -> video_mode::Picture {
         let platform = self.playing_platform();
         video_mode::picture_for(
             platform,
             self.video_mode,
             self.drawn_scale(platform),
             self.resolved_stretch(platform),
+            self.core_frame(),
         )
     }
 
@@ -4181,20 +4224,17 @@ impl App {
     }
 
     pub fn game_layout(&self) -> GameLayout {
-        let (sizing, source) = self.picture();
-        self.layout_of(self.playing_platform(), sizing, source)
+        self.layout_of(self.playing_platform(), self.picture())
     }
 
-    fn layout_of(&self, platform: Platform, sizing: Sizing, source: [f32; 4]) -> GameLayout {
+    fn layout_of(&self, platform: Platform, picture: video_mode::Picture) -> GameLayout {
         #[cfg(feature = "nds")]
         if platform == Platform::Nds {
-            return slot_gfx::game_layout(self.panel, platform.picture(), sizing);
+            return slot_gfx::game_layout(self.panel, platform.picture(), picture.sizing);
         }
-        let picture = match source == WHOLE_TEXTURE {
-            true => (slot_gfx::SRC_W, slot_gfx::SRC_H),
-            false => platform.picture(),
-        };
-        slot_gfx::game_layout(self.panel, picture, sizing)
+        #[cfg(not(feature = "nds"))]
+        let _ = platform;
+        slot_gfx::game_layout(self.panel, picture.size, picture.sizing)
     }
 
     fn shown_as(
@@ -4204,10 +4244,13 @@ impl App {
         scale: Scale,
         stretch: Stretch,
     ) -> (bool, [i32; 4]) {
-        let (sizing, source) = video_mode::picture_for(platform, mode, scale, stretch);
-        let layout = self.layout_of(platform, sizing, source);
-        let (_, crop) =
-            video_mode::picture_for(platform, VideoMode::Actual, Scale::Integer, stretch);
+        let frame = self.core_frame();
+        let shown = video_mode::picture_for(platform, mode, scale, stretch, frame);
+        let (sizing, source) = (shown.sizing, shown.source);
+        let layout = self.layout_of(platform, shown);
+        let crop =
+            video_mode::picture_for(platform, VideoMode::Actual, Scale::Integer, stretch, frame)
+                .source;
         let [rx, ry, rw, rh] = layout.rect;
         let at = |from: f32, len: f32, off: f32, src: f32, size: f32| {
             ((from + (off - src) / len * size) * 100.0).round() as i32
@@ -4341,7 +4384,7 @@ impl App {
 
     pub fn picture_fills(&self) -> bool {
         match self.playing_platform().hardware() {
-            Platform::Gba => self.picture().0 == Sizing::Panel && self.game_layout().panel,
+            Platform::Gba => self.picture().sizing == Sizing::Panel && self.game_layout().panel,
             _ => self.video_mode == VideoMode::Stretch,
         }
     }
@@ -4764,10 +4807,11 @@ impl App {
     }
 
     pub fn picture_rect(&self) -> [f32; 4] {
-        let (w, h) = self.platform.picture();
-        let (sw, sh) = (slot_gfx::SRC_W as f32, slot_gfx::SRC_H as f32);
-        let (x, y) = ((sw - w as f32) / 2.0, (sh - h as f32) / 2.0);
-        [x / sw, y / sh, (x + w as f32) / sw, (y + h as f32) / sh]
+        let picture = self.picture();
+        let (w, h) = (picture.content.0 as f32, picture.content.1 as f32);
+        let (sw, sh) = (picture.size.0 as f32, picture.size.1 as f32);
+        let (x, y) = ((sw - w) / 2.0, (sh - h) / 2.0);
+        [x / sw, y / sh, (x + w) / sw, (y + h) / sh]
     }
 
     pub fn may_load_state(&self) -> bool {
@@ -5470,7 +5514,7 @@ impl App {
             let known = match crate::art::rom::cached_crc(&root, &path) {
                 Ok(crc) => Some((
                     crc,
-                    [Core::Mgba, Core::Gpsp, Core::Gambatte]
+                    [Core::Mgba, Core::Gpsp, Core::Sameboy]
                         .into_iter()
                         .map(|c| (c, crate::root::bios_crc(&root, platform, c)))
                         .collect(),
@@ -5675,7 +5719,7 @@ impl App {
         std::thread::spawn(move || {
             let mut list = Vec::new();
             for platform in [Platform::Gba, Platform::Gb, Platform::Gbc] {
-                for core in [Core::Mgba, Core::Gpsp, Core::Gambatte] {
+                for core in [Core::Mgba, Core::Gpsp, Core::Sameboy] {
                     list.push((platform, core, crate::root::bios_crc(&root, platform, core)));
                 }
             }
@@ -11068,7 +11112,7 @@ impl App {
             self.hud.toast(Toast::NoWifi, self.now());
             return;
         }
-        if self.core == Core::Gambatte {
+        if self.core == Core::Sameboy {
             self.hud.toast(Toast::NeedsMgba, self.now());
             return;
         }

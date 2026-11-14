@@ -374,6 +374,14 @@ impl Compositor {
         self.game.set_source_rect(rect);
     }
 
+    pub fn set_game_source_size(&mut self, w: u32, h: u32) {
+        self.game.set_source_size(w, h);
+    }
+
+    pub fn game_source_size(&self) -> (u32, u32) {
+        self.game.source_size()
+    }
+
     pub fn set_shake(&mut self, dx: f32) {
         self.shake = dx;
     }

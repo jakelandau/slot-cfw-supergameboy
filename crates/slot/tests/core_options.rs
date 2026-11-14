@@ -365,7 +365,15 @@ fn the_blending_off_slot_sets_is_one_the_core_declares() {
         slot::core::apply_core_options(&mut core, which, platform, "auto", false, false, None);
         slot::core::apply_blending_off(&mut core, which);
         every_option_is_one_the_core_has(&core, &format!("{} blending off", which.as_str()));
-        let (key, value) = slot::core::blending_off(which);
+        let Some((key, value)) = slot::core::blending_off(which) else {
+            assert_eq!(
+                which,
+                Core::Sameboy,
+                "{} needs a blending option",
+                which.as_str()
+            );
+            continue;
+        };
         assert!(
             core.options().iter().any(|(k, v)| k == key && v == value),
             "{} was never told {key}={value}",

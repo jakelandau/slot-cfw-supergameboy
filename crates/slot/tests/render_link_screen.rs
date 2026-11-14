@@ -497,8 +497,8 @@ fn a_cart_gpsp_can_link_reads_please_switch_to_gpsp() {
 }
 
 #[test]
-fn a_gambatte_game_reads_please_switch_to_mgba_on_the_glass() {
-    let px = banner_pixels(Core::Gambatte, "POKEMON RED", "BPRE", "banner-gambatte");
+fn a_sameboy_game_reads_please_switch_to_mgba_on_the_glass() {
+    let px = banner_pixels(Core::Sameboy, "POKEMON RED", "BPRE", "banner-sameboy");
     assert_eq!(
         ink(&px),
         banner_ink(Toast::NeedsMgba),

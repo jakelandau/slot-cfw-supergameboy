@@ -22,7 +22,7 @@ Skeuomorphic UI
 <div class="keys" markdown>
 
 Emulation
-:   [mGBA](https://mgba.io), [gpSP](https://github.com/libretro/gpsp) and [Gambatte](https://github.com/libretro/gambatte-libretro)
+:   [mGBA](https://mgba.io), [gpSP](https://github.com/libretro/gpsp) and [SameBoy](https://sameboy.github.io)
 
 Underlying OS
 :   [BaseOS](https://github.com/pvaibhav/BaseOS) by [Prashant Vaibhav](https://github.com/pvaibhav)

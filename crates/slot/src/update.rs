@@ -14,7 +14,7 @@ const REQUIRED: [&str; 5] = [
     "launch_frontend.sh",
     "mgba_libretro.so",
     "gpsp_libretro.so",
-    "gambatte_libretro.so",
+    "sameboy_libretro.so",
 ];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

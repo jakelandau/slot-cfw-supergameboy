@@ -1261,6 +1261,10 @@ impl Frontend {
         compositor.set_shake(self.session.app().screen_shake());
         compositor.set_screen_power(self.session.app().screen_power());
         compositor.set_screen_footer(self.session.app().screen_footer());
+        let picture = self.session.emu().map(crate::emu::EmuHandle::video_picture);
+        self.session.app_mut().set_core_video(picture);
+        let (cw, ch) = self.session.app().game_canvas();
+        compositor.set_game_source_size(cw, ch);
         compositor.set_game_source_rect(self.session.app().source_rect());
         compositor.set_game_layout(self.session.app().game_layout());
         compositor.set_placeholder_bezel(self.session.app().placeholder_bezel());
@@ -1272,7 +1276,8 @@ impl Frontend {
         }
         if let Some([r, g, b]) = self.session.app().blank_panel() {
             self.picture_is(Picture::Blank, compositor);
-            let px = (slot_gfx::SRC_W * slot_gfx::SRC_H) as usize;
+            let (sw, sh) = compositor.game_source_size();
+            let px = (sw * sh) as usize;
             compositor.upload_game(&[b, g, r, 0xff].repeat(px));
         } else if let Some(frame) = (!crate::ds_view::seated(&self.session))
             .then(|| self.session.frame())

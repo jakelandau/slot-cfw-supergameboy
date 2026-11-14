@@ -170,7 +170,7 @@ fn start_opens_the_picker_on_a_game_boy_cart() {
             common::tmp_root_with_gb_carts(&["Tetris", "Zzz"]),
             common::tmp_root_with_gb_carts(&["Tetris", "Zzz"]),
             "gb",
-            Core::Gambatte,
+            Core::Sameboy,
         ),
         (
             common::tmp_root_with_carts(&["Emerald", "Zzz"]),
@@ -295,8 +295,8 @@ fn render_core_picker_gb() {
             let_it_hop(&mut app);
             let_it_hop(&mut app);
             let name = format!("picker-{shell}-{}", panel.0);
-            let gambatte = shot(&app, &mut c, &format!("{name}-gambatte"));
-            assert_eq!(app.core_picker_chip().unwrap().seated, Some(Core::Gambatte));
+            let sameboy = shot(&app, &mut c, &format!("{name}-sameboy"));
+            assert_eq!(app.core_picker_chip().unwrap().seated, Some(Core::Sameboy));
             app.apply(Action::GbaDown(Btn::Left));
             let_it_hop(&mut app);
             let mgba = shot(&app, &mut c, &format!("{name}-mgba"));
@@ -306,7 +306,7 @@ fn render_core_picker_gb() {
                 "the chip did not land in the mGBA socket"
             );
             assert!(
-                mgba != gambatte,
+                mgba != sameboy,
                 "the chip moved and the panel did not change"
             );
         }

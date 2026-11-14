@@ -1291,9 +1291,11 @@ impl Frontend {
         compositor.set_game_source_size(cw, ch);
         compositor.set_game_source_rect(self.session.app().source_rect());
         compositor.set_game_layout(self.session.app().game_layout());
-        // Unconditional and capped: a card whose screen stays black should say why in its own log,
-        // with no adb and no environment to set.
-        if self.traced < 3 {
+        // Unconditional and capped per launch, so a card whose screen stays black says why in its
+        // own log, with no adb and no environment to set.
+        if picture.is_none() {
+            self.traced = 0;
+        } else if self.traced < 3 {
             Self::trace_game(
                 self.traced,
                 picture,

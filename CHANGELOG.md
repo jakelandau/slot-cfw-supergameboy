@@ -2,6 +2,15 @@
 
 ## [1.16.2](https://github.com/jakelandau/slot-cfw-supergameboy/releases/tag/v1.16.2-supergameboy)
 
+- Rebased on upstream slot v1.16.0, so this build is the stable release with this fork's work on top: SameBoy, the Super Game Boy border and seal, this fork's updates, and audio through a USB-C adapter.
+
+## [1.16.1-supergameboy](https://github.com/jakelandau/slot-cfw-supergameboy/releases/tag/v1.16.1-supergameboy)
+
+- Update over Wi-Fi now offers this fork's releases instead of upstream slot's. Each release carries the `versions.json` the device reads, and its zip is downloaded from this repository, so a card on `v1.16.1-supergameboy` sees `v1.16.2-supergameboy` when it lands.
+- Versions carry the fork's `-supergameboy` suffix, and comparing them still puts `1.16.1-supergameboy` above `1.16.0-supergameboy`. A prerelease still never offers itself.
+
+## [1.16.0-supergameboy](https://github.com/jakelandau/slot-cfw-supergameboy/releases/tag/v1.16.0-supergameboy)
+
 - SameBoy replaces Gambatte as the Game Boy and Game Boy Color core. Super Game Boy carts now show the borders and palettes the original hardware drew, as a 256x224 picture. Saves carry over from Gambatte, clock and all; save states do not. Press START on a Game Boy cart to switch between mGBA and SameBoy.
 - A custom Game Boy boot ROM now goes in `BIOS` as `dmg_boot.bin` and `cgb_boot.bin`, the names SameBoy reads. Without one, SameBoy's builtin boot ROMs run.
 - Cartridges that support Super Game Boy functions wear a small SGB seal on their label, read from the cart's own header. Game Boy Color carts never do.

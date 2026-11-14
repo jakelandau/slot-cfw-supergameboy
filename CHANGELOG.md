@@ -2,7 +2,10 @@
 
 ## [1.16.2](https://github.com/jakelandau/slot-cfw-supergameboy/releases/tag/v1.16.2-supergameboy)
 
-- Rebased on upstream slot v1.16.0, so this build is the stable release with this fork's work on top: SameBoy, the Super Game Boy border and seal, this fork's updates, and audio through a USB-C adapter.
+- Games draw again on the device. The running core's picture was read back from its packed form without masking the height, so a 240x160 screen became 240x15728800: the game texture was refused every frame and the layout drew a sliver. Every core and every system showed black with the audio still playing. Game Boy, Game Boy Color and Game Boy Advance all draw again.
+- Rebased on upstream slot v1.16.0, so this build carries the stable release: sound through a USB-C audio adapter, handwritten labels for carts with no art, Link invites from Kid Mode cards, nicknames, clearer link messages.
+- The first three frames of each launch are now logged with the sizes and rectangles the game pass was given, so a card that draws nothing can say why.
+- Game Boy textures are stored as RGBA on GLES, where BGRA is only an upload format and not a storage one.
 
 ## [1.16.1-supergameboy](https://github.com/jakelandau/slot-cfw-supergameboy/releases/tag/v1.16.1-supergameboy)
 

@@ -66,9 +66,9 @@ fn the_core_is_told_the_saves_folder_too() {
     assert_eq!(core.reported_save_dir(), saves.to_string_lossy());
 }
 
-fn gambatte() -> Option<PathBuf> {
+fn sameboy() -> Option<PathBuf> {
     let p = common::repo_root().join(format!(
-        "vendor/gambatte_libretro.{}",
+        "vendor/sameboy_libretro.{}",
         std::env::consts::DLL_EXTENSION
     ));
     p.exists().then_some(p)
@@ -86,18 +86,19 @@ fn sram_writer_rom() -> Vec<u8> {
 }
 
 fn first_sram_byte_after_boot(bios: Option<&[u8]>) -> Option<u8> {
-    let dylib = gambatte()?;
+    let dylib = sameboy()?;
     let d = tempdir().unwrap();
     std::fs::create_dir_all(d.path().join("BIOS")).unwrap();
     std::fs::create_dir_all(d.path().join("Saves")).unwrap();
     if let Some(bytes) = bios {
-        std::fs::write(d.path().join("BIOS/gb_bios.bin"), bytes).unwrap();
+        // SameBoy looks for <model>_boot.bin in the card's BIOS directory.
+        std::fs::write(d.path().join("BIOS/dmg_boot.bin"), bytes).unwrap();
     }
     let rom = d.path().join("writer.gb");
     std::fs::write(&rom, sram_writer_rom()).unwrap();
     let mut core = open_core_for_palette(
         d.path(),
-        Core::Gambatte,
+        Core::Sameboy,
         Platform::Gb,
         "auto",
         false,
@@ -112,7 +113,7 @@ fn first_sram_byte_after_boot(bios: Option<&[u8]>) -> Option<u8> {
 }
 
 #[test]
-fn gambatte_runs_the_cart_straight_away_without_a_bios() {
+fn sameboy_runs_the_cart_straight_away_without_a_bios() {
     let _g = core_lock();
     let Some(first) = first_sram_byte_after_boot(None) else {
         return;
@@ -124,7 +125,7 @@ fn gambatte_runs_the_cart_straight_away_without_a_bios() {
 }
 
 #[test]
-fn gambatte_boots_through_the_cards_game_boy_bios() {
+fn sameboy_boots_through_the_cards_game_boy_bios() {
     let _g = core_lock();
     let mut stuck = vec![0u8; 0x100];
     stuck[..2].copy_from_slice(&[0x18, 0xfe]);
@@ -133,7 +134,7 @@ fn gambatte_boots_through_the_cards_game_boy_bios() {
     };
     assert_ne!(
         first, 0x99,
-        "the cart ran, so Gambatte skipped BIOS/gb_bios.bin"
+        "the cart ran, so SameBoy skipped BIOS/dmg_boot.bin"
     );
 }
 

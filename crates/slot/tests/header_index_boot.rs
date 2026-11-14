@@ -10,7 +10,7 @@ fn boot_takes_game_boy_shapes_from_the_saved_index() {
     std::fs::create_dir_all(d.path().join("Cache")).unwrap();
     std::fs::write(
         d.path().join("Cache/headers"),
-        "G\tGames/GBC/Pak.gbc\t336\t0\t192\t0\t\tPAK\n",
+        "G\tGames/GBC/Pak.gbc\t336\t0\t192\t0\t\tPAK\t0\n",
     )
     .unwrap();
     let app = App::boot(d.path());
@@ -33,7 +33,7 @@ fn boot_drops_index_entries_for_games_no_longer_on_the_card() {
     std::fs::create_dir_all(d.path().join("Cache")).unwrap();
     std::fs::write(
         d.path().join("Cache/headers"),
-        "G\tGames/GB/Here.gb\t336\t0\t0\t0\t\tHERE\nG\tGames/GB/Gone.gb\t336\t0\t192\t0\t\tGONE\n",
+        "G\tGames/GB/Here.gb\t336\t0\t0\t0\t\tHERE\t0\nG\tGames/GB/Gone.gb\t336\t0\t192\t0\t\tGONE\t0\n",
     )
     .unwrap();
     let _app = App::boot(d.path());

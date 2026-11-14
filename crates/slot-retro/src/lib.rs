@@ -14,7 +14,7 @@ mod mock;
 pub mod rtc;
 mod rumble;
 
-pub use core::{mask_for, AvInfo, ButtonMask, CoreError, RetroCore, GBA_H, GBA_W};
+pub use core::{canvas_for, mask_for, AvInfo, ButtonMask, CoreError, RetroCore, GBA_H, GBA_W};
 pub use dsperate::{ds_buttons, DsperateCore, DS_H, DS_W};
 pub use ffi::{
     NETPACKET_BROADCAST, NETPACKET_FLUSH_HINT, NETPACKET_RELIABLE, NETPACKET_UNRELIABLE,

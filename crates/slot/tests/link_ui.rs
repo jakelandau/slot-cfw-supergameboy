@@ -1704,11 +1704,11 @@ fn a_wireless_adapter_cart_on_mgba_still_says_to_switch_to_gpsp() {
 }
 
 #[test]
-fn the_link_overlay_on_gambatte_says_to_switch_to_mgba() {
+fn the_link_overlay_on_sameboy_says_to_switch_to_mgba() {
     let d = common::tmp_root_with_gb_carts(&["Pokemon Red", "Zzz"]);
-    let mut app = seated_on_platform(&d, Core::Gambatte, Platform::Gb);
+    let mut app = seated_on_platform(&d, Core::Sameboy, Platform::Gb);
     app.apply(Action::GameMenu);
-    assert!(!app.game_menu_open(), "Gambatte opened the link overlay");
+    assert!(!app.game_menu_open(), "SameBoy opened the link overlay");
     assert_eq!(app.toast(), Some(Toast::NeedsMgba));
 }
 

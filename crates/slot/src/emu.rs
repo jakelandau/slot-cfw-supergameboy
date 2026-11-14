@@ -115,6 +115,9 @@ struct Shared {
     locked: AtomicBool,
     present_ns: AtomicU64,
     requested: AtomicBool,
+    /// The frame the core draws, as w << 16 | h. Everything but SameBoy's bordered Super Game Boy
+    /// frames is 240x160.
+    picture: AtomicU64,
     clock: Mutex<Clock>,
     clocked: Condvar,
 }
@@ -172,6 +175,12 @@ impl EmuHandle {
         Self::spawn_as(core, rom, ring, sav, resume, Some(player))
     }
 
+    /// The frame the core draws, learned once it has loaded.
+    pub fn video_picture(&self) -> (u32, u32) {
+        let packed = self.shared.picture.load(Ordering::Relaxed);
+        ((packed >> 16) as u32, packed as u32)
+    }
+
     pub fn refuse_save_ram(&self) {
         self.shared.sav_refused.store(true, Ordering::Release);
     }
@@ -191,6 +200,7 @@ impl EmuHandle {
         let rumble = core.rumble();
         let link = core.net();
         let (w, h) = core.video_size();
+        let picture = core.video_picture();
         let frames = Frames::new((w * h * 4) as usize);
         let shared = Arc::new(Shared {
             input: AtomicU16::new(0),
@@ -219,6 +229,7 @@ impl EmuHandle {
             locked: AtomicBool::new(false),
             present_ns: AtomicU64::new(PRESENT.as_nanos() as u64),
             requested: AtomicBool::new(false),
+            picture: AtomicU64::new(pack_picture(picture)),
             clock: Mutex::new(Clock::default()),
             clocked: Condvar::new(),
         });
@@ -620,6 +631,9 @@ impl Worker {
                 self.shared.resume_refused.store(true, Ordering::Release);
             }
         }
+        self.shared
+            .picture
+            .store(pack_picture(core.video_picture()), Ordering::Relaxed);
         let av = core.av_info();
         let device_hz = match ring.sample_rate() {
             0 => av.sample_rate,
@@ -1026,7 +1040,8 @@ impl Worker {
                 let _ = reply.send(core.save_ram());
             }
             Cmd::Thumb(reply) => {
-                let _ = reply.send(crate::thumb::png(core.video_xrgb8888()));
+                let (w, h) = core.video_size();
+                let _ = reply.send(crate::thumb::png(core.video_xrgb8888(), w, h));
             }
             Cmd::BeginLink(client_id, t) => {
                 self.shared.link_lost.store(false, Ordering::Relaxed);
@@ -1113,6 +1128,10 @@ impl Worker {
 }
 
 const NO_TOUCH: u32 = u32::MAX;
+
+fn pack_picture((w, h): (u32, u32)) -> u64 {
+    (u64::from(w) << 16) | u64::from(h)
+}
 
 fn pack_touch(at: Option<(u8, u8)>) -> u32 {
     at.map_or(NO_TOUCH, |(x, y)| (x as u32) << 8 | y as u32)

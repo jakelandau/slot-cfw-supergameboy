@@ -212,6 +212,58 @@ fn bezel_art_follows_the_layout() {
 }
 
 #[test]
+fn a_super_game_boy_border_takes_the_built_in_bezel_s_place() {
+    for bezel in [BezelPick::Ags102, BezelPick::Default] {
+        let (_d, mut a) = playing(
+            Platform::Gb,
+            (720, 480),
+            SlotState {
+                bezel_gb: bezel.clone(),
+                ..SlotState::default()
+            },
+        );
+        assert!(
+            a.bezel_art().is_some(),
+            "{bezel:?} is not the built-in bezel"
+        );
+        a.set_core_video(Some((256, 224)));
+        assert_eq!(a.bezel_art(), None, "{bezel:?} art around an SGB border");
+        assert_eq!(
+            a.resolved_bezel(Platform::Gb),
+            BezelPick::None,
+            "{bezel:?} frame around an SGB border"
+        );
+        assert_eq!(a.shown_game_bezel(), None);
+        // The bordered frame is the picture, all 256x224 of it.
+        assert_eq!(a.game_canvas(), (256, 224));
+        assert_eq!(a.source_rect(), WHOLE_TEXTURE);
+        assert_eq!(a.picture_size(), (256, 224));
+    }
+}
+
+#[test]
+fn a_bezel_file_you_chose_survives_a_super_game_boy_border() {
+    let (d, mut a) = playing(
+        Platform::Gb,
+        (720, 480),
+        SlotState {
+            bezel_gb: BezelPick::File("Mine_spscreen.png".into()),
+            ..SlotState::default()
+        },
+    );
+    let dir = d.path().join("Bezels").join("GB");
+    std::fs::create_dir_all(&dir).unwrap();
+    std::fs::write(dir.join("Mine_spscreen.png"), b"not really a png").unwrap();
+    assert!(matches!(a.resolved_bezel(Platform::Gb), BezelPick::File(_)));
+    a.set_core_video(Some((256, 224)));
+    assert_eq!(
+        a.resolved_bezel(Platform::Gb),
+        BezelPick::File("Mine_spscreen.png".into()),
+        "slot dropped a bezel the card owner chose"
+    );
+}
+
+#[test]
 fn a_saved_integer_on_3_by_2_draws_exactly_as_default() {
     let (_d, a) = playing(
         Platform::Gb,

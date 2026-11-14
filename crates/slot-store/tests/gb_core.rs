@@ -22,10 +22,10 @@ fn write_line(d: &std::path::Path, line: Option<&str>) {
 }
 
 #[test]
-fn a_new_card_defaults_game_boy_to_gambatte() {
-    assert_eq!(SlotState::default().gb_core, Core::Gambatte);
+fn a_new_card_defaults_game_boy_to_sameboy() {
+    assert_eq!(SlotState::default().gb_core, Core::Sameboy);
     let d = root();
-    assert_eq!(read_slot_state(d.path()).gb_core, Core::Gambatte);
+    assert_eq!(read_slot_state(d.path()).gb_core, Core::Sameboy);
 }
 
 #[test]
@@ -42,8 +42,8 @@ fn gb_core_round_trips() {
     let d = root();
     write_slot_state(d.path(), &SlotState::default()).unwrap();
     let text = std::fs::read_to_string(d.path().join("Config/slot.state")).unwrap();
-    assert!(text.lines().any(|l| l == "gb_core=gambatte"));
-    assert_eq!(read_slot_state(d.path()).gb_core, Core::Gambatte);
+    assert!(text.lines().any(|l| l == "gb_core=sameboy"));
+    assert_eq!(read_slot_state(d.path()).gb_core, Core::Sameboy);
     let mgba = SlotState {
         gb_core: Core::Mgba,
         ..SlotState::default()

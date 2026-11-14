@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.2](https://github.com/jakelandau/slot-cfw-supergameboy/releases/tag/v1.16.2-supergameboy)
+
+- SameBoy replaces Gambatte as the Game Boy and Game Boy Color core. Super Game Boy carts now show the borders and palettes the original hardware drew, as a 256x224 picture. Saves carry over from Gambatte, clock and all; save states do not. Press START on a Game Boy cart to switch between mGBA and SameBoy.
+- A custom Game Boy boot ROM now goes in `BIOS` as `dmg_boot.bin` and `cgb_boot.bin`, the names SameBoy reads. Without one, SameBoy's builtin boot ROMs run.
+- Cartridges that support Super Game Boy functions wear a small SGB seal on their label, read from the cart's own header. Game Boy Color carts never do.
+- Game Boy link play still needs mGBA, and the in-game menu says so.
+
 ## [1.16.0](https://github.com/slot-cfw/slot/releases/tag/v1.16.0)
 
 - Carts with no label art now get their title handwritten on the plastic in black or white marker.
@@ -11,6 +18,7 @@
 - Sound plays through a USB-C audio adapter when one is plugged in. (@machomano11)
 - The Turbo Buttons setting is gone. To turn turbo off, clear Turbo A and Turbo B in Settings → Controls.
 - A screenshot thumbnail that was still loading when you left the gallery now shows when you come back. (@ErioGH)
+
 
 ## [1.15.3](https://github.com/slot-cfw/slot/releases/tag/v1.15.3)
 

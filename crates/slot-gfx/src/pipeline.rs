@@ -6,6 +6,9 @@ use crate::shaders::{GAME_FRAG, RECT_VERT};
 use crate::surface::{GfxError, OUT_H, OUT_W};
 
 pub const SCALE: u32 = 3;
+/// The game texture every core but SameBoy fills: 240x160 at three times the framebuffer's scale.
+/// SameBoy's bordered Super Game Boy frame is 256x224 instead, so the texture is resized when the
+/// core hands over something bigger (`GamePass::set_source_size`).
 pub const SRC_W: u32 = OUT_W / SCALE;
 pub const SRC_H: u32 = OUT_H / SCALE;
 
@@ -27,6 +30,7 @@ pub struct GamePass {
     u_mode: gl::types::GLint,
     u_paper_size: gl::types::GLint,
     u_fbo: gl::types::GLint,
+    u_src: gl::types::GLint,
     fbo_scale: [f32; 2],
     u_origin: gl::types::GLint,
     origin: [f32; 2],
@@ -41,6 +45,8 @@ pub struct GamePass {
     bottom: f32,
     src: [f32; 4],
     layout: [f32; 4],
+    /// The size of the game texture, which is the size of the frame the core hands over.
+    src_size: (u32, u32),
 }
 
 impl GamePass {
@@ -57,15 +63,12 @@ impl GamePass {
             crate::gl::gray_format(),
             Some(&[255]),
         );
-        let (u_rect, u_bright, u_uv, u_mode, u_paper_size, u_pic, u_fbo, u_origin);
+        let (u_rect, u_bright, u_uv, u_mode, u_paper_size, u_pic, u_fbo, u_origin, u_src);
         unsafe {
             gl::UseProgram(prog);
             gl::Uniform1i(crate::gl::uniform_location(prog, "u_game"), 0);
-            gl::Uniform2f(
-                crate::gl::uniform_location(prog, "u_src"),
-                SRC_W as f32,
-                SRC_H as f32,
-            );
+            u_src = crate::gl::uniform_location(prog, "u_src");
+            gl::Uniform2f(u_src, SRC_W as f32, SRC_H as f32);
             gl::Uniform2f(
                 crate::gl::uniform_location(prog, "u_target"),
                 OUT_W as f32,
@@ -95,6 +98,7 @@ impl GamePass {
             u_mode,
             u_paper_size,
             u_fbo,
+            u_src,
             fbo_scale: [1.0, 1.0],
             u_origin,
             origin: [0.0, 0.0],
@@ -108,7 +112,30 @@ impl GamePass {
             bottom: 0.0,
             src: WHOLE_TEXTURE,
             layout: FULL,
+            src_size: (SRC_W, SRC_H),
         })
+    }
+
+    pub fn source_size(&self) -> (u32, u32) {
+        self.src_size
+    }
+
+    /// Resize the game texture to the frames the running core hands over. SameBoy's bordered
+    /// Super Game Boy frames are 256x224; every other core draws 240x160.
+    pub fn set_source_size(&mut self, w: u32, h: u32) {
+        if w == 0 || h == 0 || (w, h) == self.src_size {
+            return;
+        }
+        unsafe {
+            gl::DeleteTextures(2, self.game.as_ptr());
+            gl::UseProgram(self.prog);
+            gl::Uniform2f(self.u_src, w as f32, h as f32);
+        }
+        self.game = [0, 1]
+            .map(|_| crate::gl::texture(w, h, gl::NEAREST, gl::CLAMP_TO_EDGE, gl::BGRA, None));
+        self.src_size = (w, h);
+        self.ghost.resize(w, h);
+        self.cut();
     }
 
     pub fn set_power(&mut self, t: f32) {
@@ -225,7 +252,8 @@ impl GamePass {
     }
 
     pub fn upload(&mut self, xrgb8888: &[u8], quad: &Quad) {
-        if xrgb8888.len() < (SRC_W * SRC_H * 4) as usize {
+        let (w, h) = self.src_size;
+        if xrgb8888.len() < (w * h * 4) as usize {
             return;
         }
         let last = self.game[self.at];
@@ -240,8 +268,8 @@ impl GamePass {
                 0,
                 0,
                 0,
-                SRC_W as i32,
-                SRC_H as i32,
+                w as i32,
+                h as i32,
                 gl::BGRA,
                 gl::UNSIGNED_BYTE,
                 xrgb8888.as_ptr() as *const std::ffi::c_void,
@@ -257,7 +285,7 @@ impl GamePass {
     pub fn draw(&self, quad: &Quad) {
         let src = match self.effect {
             ScreenEffect::Grid if self.layout == FULL => {
-                whole_scale_source(self.src, self.fbo_scale)
+                whole_scale_source(self.src, self.src_size, self.fbo_scale)
             }
             _ => self.src,
         };
@@ -318,9 +346,9 @@ fn placed_in(frame: (f32, f32, f32, f32), layout: [f32; 4]) -> (f32, f32, f32, f
     (lx + x * sx, ly + y * sy, w * sx, h * sy)
 }
 
-fn whole_scale_source(src: [f32; 4], fbo: [f32; 2]) -> [f32; 4] {
-    let (x, w) = whole_scale(src[0], src[2], SRC_W as f32, OUT_W as f32 * fbo[0]);
-    let (y, h) = whole_scale(src[1], src[3], SRC_H as f32, OUT_H as f32 * fbo[1]);
+fn whole_scale_source(src: [f32; 4], size: (u32, u32), fbo: [f32; 2]) -> [f32; 4] {
+    let (x, w) = whole_scale(src[0], src[2], size.0 as f32, OUT_W as f32 * fbo[0]);
+    let (y, h) = whole_scale(src[1], src[3], size.1 as f32, OUT_H as f32 * fbo[1]);
     [x, y, w, h]
 }
 

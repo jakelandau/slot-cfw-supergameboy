@@ -212,15 +212,9 @@ pub fn colour_option(
             "gpsp_color_correction",
             if on { "enabled" } else { "disabled" },
         )),
-        Core::Gambatte => Some((
-            "gambatte_gbc_color_correction",
-            if !on {
-                "disabled"
-            } else if platform == Platform::Gb {
-                "always"
-            } else {
-                "GBC only"
-            },
+        Core::Sameboy => Some((
+            "sameboy_color_correction_mode",
+            if on { "emulate hardware" } else { "off" },
         )),
     }
 }
@@ -247,19 +241,22 @@ pub fn sunlight_at(local_secs: i64) -> u8 {
     (SUNLIGHT_NOON * (360 - from_noon) / 360).max(0) as u8
 }
 
-pub fn blending_off(which: Core) -> (&'static str, &'static str) {
+/// The core option slot turns off so that frame blending happens on the GPU instead. SameBoy mixes
+/// no frames of its own, so there is nothing to turn off there.
+pub fn blending_off(which: Core) -> Option<(&'static str, &'static str)> {
     match which {
-        Core::Mgba => ("mgba_interframe_blending", "OFF"),
-        Core::Gpsp => ("gpsp_frame_mixing", "disabled"),
-        Core::Gambatte => ("gambatte_mix_frames", "disabled"),
+        Core::Mgba => Some(("mgba_interframe_blending", "OFF")),
+        Core::Gpsp => Some(("gpsp_frame_mixing", "disabled")),
+        Core::Sameboy => None,
         #[cfg(feature = "nds")]
-        Core::Dsperate => ("dsperate_blending", "off"),
+        Core::Dsperate => Some(("dsperate_blending", "off")),
     }
 }
 
 pub fn apply_blending_off(core: &mut LibretroCore, which: Core) {
-    let (key, value) = blending_off(which);
-    core.set_option(key, value);
+    if let Some((key, value)) = blending_off(which) {
+        core.set_option(key, value);
+    }
 }
 
 pub fn apply_link_options(core: &mut LibretroCore, which: Core, player: u8) {
@@ -273,21 +270,20 @@ pub fn apply_link_options(core: &mut LibretroCore, which: Core, player: u8) {
 
 pub fn palette_options(which: Core, colors: GbColors) -> Vec<(&'static str, &'static str)> {
     match (which, colors) {
-        (Core::Gambatte, GbColors::Palette(p)) => vec![
-            ("gambatte_gb_colorization", "internal"),
-            ("gambatte_gb_internal_palette", p.gambatte_name()),
-        ],
-        (Core::Gambatte, GbColors::Auto) => vec![("gambatte_gb_colorization", "GBC")],
+        (Core::Sameboy, GbColors::Palette(p)) => match p.mono_name() {
+            Some(name) => vec![("sameboy_mono_palette", name)],
+            None => vec![],
+        },
+        // SameBoy has no auto colouring of its own, so Auto is slot's own default palette, the
+        // DMG's green.
+        (Core::Sameboy, GbColors::Auto) => vec![("sameboy_mono_palette", "lime")],
         _ => vec![("mgba_gb_colors", colors.core_name())],
     }
 }
 
 fn init_options(core: Core) -> &'static [(&'static str, &'static str)] {
     match core {
-        Core::Gambatte => &[
-            ("gambatte_gb_bootloader", "enabled"),
-            ("gambatte_rumble_level", "10"),
-        ],
+        Core::Sameboy => &[("sameboy_rtc", "sync to system clock")],
         _ => &[],
     }
 }
@@ -301,7 +297,7 @@ pub fn apply_core_options(
     colour: bool,
     palette: Option<GbColors>,
 ) {
-    if which != Core::Gambatte {
+    if which != Core::Sameboy {
         core.set_option(&format!("{}_frameskip", which.as_str()), "auto");
     }
     if which == Core::Mgba {
@@ -322,8 +318,10 @@ pub fn apply_core_options(
             core.set_option(key, value);
         }
     }
-    if which == Core::Gambatte {
-        core.set_option("gambatte_gb_hwmode", "Auto");
+    if which == Core::Sameboy {
+        // Auto (SGB) is what makes a Super Game Boy cart boot as one, border and palette and all.
+        core.set_option("sameboy_model", "Auto (SGB)");
+        core.set_option("sameboy_border", "Super Game Boy only");
         for (key, value) in palette_options(which, palette.unwrap_or(GbColors::Auto)) {
             core.set_option(key, value);
         }
@@ -361,36 +359,44 @@ mod tests {
             palette_options(Core::Mgba, GbColors::Auto),
             vec![("mgba_gb_colors", "Auto")]
         );
+        let mono = slot_store::GbPalette::parse("DMG Green").unwrap();
         assert_eq!(
-            palette_options(Core::Gambatte, GbColors::Palette(p)),
-            vec![
-                ("gambatte_gb_colorization", "internal"),
-                ("gambatte_gb_internal_palette", "SGB - 1A")
-            ]
+            palette_options(Core::Sameboy, GbColors::Palette(mono)),
+            vec![("sameboy_mono_palette", "lime")]
         );
         assert_eq!(
-            palette_options(Core::Gambatte, GbColors::Auto),
-            vec![("gambatte_gb_colorization", "GBC")]
+            palette_options(Core::Sameboy, GbColors::Palette(p)),
+            vec![],
+            "a Super Game Boy palette has no SameBoy equivalent"
+        );
+        assert_eq!(
+            palette_options(Core::Sameboy, GbColors::Auto),
+            vec![("sameboy_mono_palette", "lime")]
         );
     }
 
     #[test]
-    fn gambatte_spells_blending_off_and_color_correction() {
+    fn sameboy_has_no_blending_option_and_spells_color_correction() {
+        assert_eq!(blending_off(Core::Sameboy), None);
         assert_eq!(
-            blending_off(Core::Gambatte),
-            ("gambatte_mix_frames", "disabled")
+            colour_option(Core::Sameboy, Platform::Gbc, true),
+            Some(("sameboy_color_correction_mode", "emulate hardware"))
         );
         assert_eq!(
-            colour_option(Core::Gambatte, Platform::Gbc, true),
-            Some(("gambatte_gbc_color_correction", "GBC only"))
+            colour_option(Core::Sameboy, Platform::Gb, true),
+            Some(("sameboy_color_correction_mode", "emulate hardware"))
         );
         assert_eq!(
-            colour_option(Core::Gambatte, Platform::Gb, true),
-            Some(("gambatte_gbc_color_correction", "always"))
+            colour_option(Core::Sameboy, Platform::Gb, false),
+            Some(("sameboy_color_correction_mode", "off"))
         );
+    }
+
+    #[test]
+    fn sameboy_syncs_its_clock_to_the_system_clock() {
         assert_eq!(
-            colour_option(Core::Gambatte, Platform::Gb, false),
-            Some(("gambatte_gbc_color_correction", "disabled"))
+            init_options(Core::Sameboy),
+            &[("sameboy_rtc", "sync to system clock")]
         );
     }
 
@@ -398,9 +404,12 @@ mod tests {
     fn each_core_spells_frame_blending_off_its_own_way() {
         assert_eq!(
             blending_off(Core::Mgba),
-            ("mgba_interframe_blending", "OFF")
+            Some(("mgba_interframe_blending", "OFF"))
         );
-        assert_eq!(blending_off(Core::Gpsp), ("gpsp_frame_mixing", "disabled"));
+        assert_eq!(
+            blending_off(Core::Gpsp),
+            Some(("gpsp_frame_mixing", "disabled"))
+        );
     }
 
     #[test]

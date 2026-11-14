@@ -1,3 +1,17 @@
+# This fork: SameBoy in place of Gambatte
+
+This is [slot](https://github.com/slot-cfw/slot) with one core swapped. **SameBoy** takes Gambatte's place
+as the Game Boy and Game Boy Color emulator, so Super Game Boy carts draw the borders and palettes they
+were made with, as a 256x224 picture. Carts that support Super Game Boy functions wear a small SGB seal on
+their label, read from the cart's own header.
+
+- Saves and the cart's clock carry over from Gambatte, including cards that already have them. Save states
+  do not.
+- Game Boy link play still needs mGBA, and the in-game menu says so.
+- Everything else is upstream's work. The original README follows.
+
+---
+
 <div align="center">
 
 <img align="top" src=".github/resources/hero.webp" width="100%" alt="slot. A bespoke, Game Boy-centric frontend for the Anbernic RG SP."><br><a href="https://github.com/slot-cfw/slot/releases/latest"><img align="top" src="https://badges.slot-cfw.fyi/release.svg" width="20.7142%" alt="Download"></a><a href="https://slot-cfw.fyi"><img align="top" src=".github/resources/badges/guide.svg" width="19.5238%" alt="Guide"></a><a href="https://discord.gg/NYRWsSuPUu"><img align="top" src=".github/resources/badges/discord.svg" width="19.5238%" alt="Discord"></a><a href="https://github.com/slot-cfw/slot/stargazers"><img align="top" src="https://badges.slot-cfw.fyi/stars.svg" width="19.5238%" alt="Stars"></a><a href="https://github.com/slot-cfw/slot/releases"><img align="top" src="https://badges.slot-cfw.fyi/downloads.svg" width="20.7142%" alt="Downloads"></a>
@@ -56,7 +70,7 @@ My goal with this project was to recreate the feeling of playing my GBA SP in th
 but with a few modern creature comforts.
 
 Nothing about this project is exciting or groundbreaking from a technological perspective, and as a
-result, I delegated the glue code. mGBA, gpSP and Gambatte have been around forever and are the true stars of
+result, I delegated the glue code. mGBA, gpSP and SameBoy have been around forever and are the true stars of
 this show. The incredible skeuomorphic art is the work of [Markus](https://github.com/MarkusMaribu), an
 artist who saw the bare-bones version and offered to dress it up.
 

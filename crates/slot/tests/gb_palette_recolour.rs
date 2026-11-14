@@ -116,13 +116,13 @@ fn the_chord_recolours_the_running_game() {
 }
 
 #[test]
-fn the_chord_recolours_the_running_game_on_gambatte() {
+fn the_chord_recolours_the_running_game_on_sameboy() {
     let dylib = repo_root().join(format!(
-        "vendor/gambatte_libretro.{}",
+        "vendor/sameboy_libretro.{}",
         std::env::consts::DLL_EXTENSION
     ));
     if !dylib.exists() {
-        eprintln!("no gambatte dylib, skipping");
+        eprintln!("no sameboy dylib, skipping");
         return;
     }
     std::env::set_var("SLOT_CORE", dylib);
@@ -131,7 +131,7 @@ fn the_chord_recolours_the_running_game_on_gambatte() {
         eprintln!("no Catrap on this machine's card, skipping");
         return;
     };
-    write_selected_core(d.path(), Platform::Gb, "Catrap", Core::Gambatte).expect("write core");
+    write_selected_core(d.path(), Platform::Gb, "Catrap", Core::Sameboy).expect("write core");
     write_slot_state(
         d.path(),
         &SlotState {
@@ -143,7 +143,7 @@ fn the_chord_recolours_the_running_game_on_gambatte() {
     let (mut s, _motor) = session_with_platform(d.path());
     let mut now = 0;
     play(&mut s, &mut now);
-    assert_eq!(s.app().core(), Core::Gambatte);
+    assert_eq!(s.app().core(), Core::Sameboy);
     until(&mut s, &mut now, "a title screen in Auto's colours", |f| {
         mean_saturation(f) > 6.0
     });

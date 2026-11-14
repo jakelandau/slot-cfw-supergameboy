@@ -689,7 +689,7 @@ fn open_core_reaches_a_gpsp_named_dylib_under_the_content_roots_system_directory
 
 #[test]
 fn a_game_boy_carts_gpsp_line_is_dropped_and_it_runs_on_the_platform_default() {
-    let default = Core::Gambatte;
+    let default = Core::Sameboy;
     use slot::app::Phase;
     use slot::persist;
     use slot::session::Session;

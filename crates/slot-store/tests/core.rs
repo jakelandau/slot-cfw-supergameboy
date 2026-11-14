@@ -162,12 +162,12 @@ fn writing_the_default_still_records_it() {
 fn an_unlisted_gb_stem_takes_the_card_default() {
     let d = tempdir().unwrap();
     assert_eq!(
-        core_for_platform(d.path(), "Tetris", Platform::Gb, Core::Gambatte),
-        Core::Gambatte
+        core_for_platform(d.path(), "Tetris", Platform::Gb, Core::Sameboy),
+        Core::Sameboy
     );
     assert_eq!(
-        core_for_platform(d.path(), "Tetris Chromatic", Platform::Gbc, Core::Gambatte),
-        Core::Gambatte
+        core_for_platform(d.path(), "Tetris Chromatic", Platform::Gbc, Core::Sameboy),
+        Core::Sameboy
     );
     assert_eq!(
         core_for_platform(d.path(), "Tetris", Platform::Gb, Core::Mgba),
@@ -179,11 +179,11 @@ fn an_unlisted_gb_stem_takes_the_card_default() {
 fn an_unlisted_gba_stem_stays_mgba() {
     let d = tempdir().unwrap();
     assert_eq!(
-        core_for_platform(d.path(), "Emerald", Platform::Gba, Core::Gambatte),
+        core_for_platform(d.path(), "Emerald", Platform::Gba, Core::Sameboy),
         Core::Mgba
     );
     assert_eq!(
-        core_for_platform(d.path(), "Emerald", Platform::Gbav, Core::Gambatte),
+        core_for_platform(d.path(), "Emerald", Platform::Gbav, Core::Sameboy),
         Core::Mgba
     );
 }
@@ -193,8 +193,8 @@ fn a_gb_stem_listed_gpsp_takes_the_card_default() {
     let d = tempdir().unwrap();
     write_selected_core(d.path(), Platform::Gb, "Tetris", Core::Gpsp).unwrap();
     assert_eq!(
-        core_for_platform(d.path(), "Tetris", Platform::Gb, Core::Gambatte),
-        Core::Gambatte
+        core_for_platform(d.path(), "Tetris", Platform::Gb, Core::Sameboy),
+        Core::Sameboy
     );
 }
 
@@ -203,34 +203,34 @@ fn a_gb_stem_listed_mgba_keeps_mgba() {
     let d = tempdir().unwrap();
     write_selected_core(d.path(), Platform::Gb, "Tetris", Core::Mgba).unwrap();
     assert_eq!(
-        core_for_platform(d.path(), "Tetris", Platform::Gb, Core::Gambatte),
+        core_for_platform(d.path(), "Tetris", Platform::Gb, Core::Sameboy),
         Core::Mgba
     );
 }
 
 #[test]
-fn gambatte_round_trips() {
+fn sameboy_round_trips() {
     let d = root_with(None);
-    write_selected_core(d.path(), Platform::Gb, "Tetris", Core::Gambatte).unwrap();
+    write_selected_core(d.path(), Platform::Gb, "Tetris", Core::Sameboy).unwrap();
     assert_eq!(
         read_selected_cores(d.path()).get("GB/Tetris"),
-        Some(&Core::Gambatte)
+        Some(&Core::Sameboy)
     );
-    assert_eq!(Core::parse("gambatte"), Some(Core::Gambatte));
-    assert_eq!(Core::Gambatte.as_str(), "gambatte");
-    assert_eq!(Core::Gambatte.text(), "Gambatte");
-    assert!(Core::Gambatte.runs(Platform::Gb));
-    assert!(Core::Gambatte.runs(Platform::Gbc));
-    assert!(!Core::Gambatte.runs(Platform::Gba));
-    assert!(!Core::Gambatte.runs(Platform::Gbav));
+    assert_eq!(Core::parse("sameboy"), Some(Core::Sameboy));
+    assert_eq!(Core::Sameboy.as_str(), "sameboy");
+    assert_eq!(Core::Sameboy.text(), "SameBoy");
+    assert!(Core::Sameboy.runs(Platform::Gb));
+    assert!(Core::Sameboy.runs(Platform::Gbc));
+    assert!(!Core::Sameboy.runs(Platform::Gba));
+    assert!(!Core::Sameboy.runs(Platform::Gbav));
 }
 
 #[test]
 fn pairs_by_platform() {
     assert_eq!(Core::pair(Platform::Gba), [Core::Mgba, Core::Gpsp]);
     assert_eq!(Core::pair(Platform::Gbav), [Core::Mgba, Core::Gpsp]);
-    assert_eq!(Core::pair(Platform::Gb), [Core::Mgba, Core::Gambatte]);
-    assert_eq!(Core::pair(Platform::Gbc), [Core::Mgba, Core::Gambatte]);
+    assert_eq!(Core::pair(Platform::Gb), [Core::Mgba, Core::Sameboy]);
+    assert_eq!(Core::pair(Platform::Gbc), [Core::Mgba, Core::Sameboy]);
 }
 
 #[test]
@@ -263,11 +263,11 @@ fn same_named_games_on_two_systems_keep_their_own_cores() {
     write_selected_core(d.path(), Platform::Gba, "Harry Potter", Core::Gpsp).unwrap();
     write_selected_core(d.path(), Platform::Gbc, "Harry Potter", Core::Mgba).unwrap();
     assert_eq!(
-        core_for_platform(d.path(), "Harry Potter", Platform::Gba, Core::Gambatte),
+        core_for_platform(d.path(), "Harry Potter", Platform::Gba, Core::Sameboy),
         Core::Gpsp
     );
     assert_eq!(
-        core_for_platform(d.path(), "Harry Potter", Platform::Gbc, Core::Gambatte),
+        core_for_platform(d.path(), "Harry Potter", Platform::Gbc, Core::Sameboy),
         Core::Mgba
     );
 }
@@ -276,21 +276,21 @@ fn same_named_games_on_two_systems_keep_their_own_cores() {
 fn a_line_without_a_system_still_counts_for_every_system() {
     let d = root_with(Some("Harry Potter = mgba\n"));
     assert_eq!(
-        core_for_platform(d.path(), "Harry Potter", Platform::Gba, Core::Gambatte),
+        core_for_platform(d.path(), "Harry Potter", Platform::Gba, Core::Sameboy),
         Core::Mgba
     );
     assert_eq!(
-        core_for_platform(d.path(), "Harry Potter", Platform::Gbc, Core::Gambatte),
+        core_for_platform(d.path(), "Harry Potter", Platform::Gbc, Core::Sameboy),
         Core::Mgba
     );
 }
 
 #[test]
 fn a_line_with_a_system_wins_over_one_without() {
-    let d = root_with(Some("GBC/Harry Potter = gambatte\nHarry Potter = mgba\n"));
+    let d = root_with(Some("GBC/Harry Potter = sameboy\nHarry Potter = mgba\n"));
     assert_eq!(
         core_for_platform(d.path(), "Harry Potter", Platform::Gbc, Core::Mgba),
-        Core::Gambatte
+        Core::Sameboy
     );
 }
 
@@ -313,7 +313,7 @@ fn the_core_list_has_three_entries() {
 fn nds_games_always_run_dsperate() {
     let d = root_with(Some("x=mgba\n"));
     assert_eq!(
-        core_for_platform(d.path(), "x", Platform::Nds, Core::Gambatte),
+        core_for_platform(d.path(), "x", Platform::Nds, Core::Sameboy),
         Core::Dsperate
     );
     assert_eq!(

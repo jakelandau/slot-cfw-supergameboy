@@ -3,7 +3,7 @@ use slot_store::{Core, Platform};
 use slot_ui::Millis;
 
 const GBA: [Core; 2] = [Core::Mgba, Core::Gpsp];
-const GB: [Core; 2] = [Core::Mgba, Core::Gambatte];
+const GB: [Core; 2] = [Core::Mgba, Core::Sameboy];
 
 fn opened(seat: Core, at: Millis) -> CorePicker {
     opened_on(GBA, seat, at)
@@ -205,19 +205,19 @@ fn the_arrows_do_nothing_while_the_picker_waits() {
 }
 
 #[test]
-fn a_game_boy_pair_hops_right_to_gambatte() {
+fn a_game_boy_pair_hops_right_to_sameboy() {
     let mut p = opened_on(Core::pair(Platform::Gb), Core::Mgba, 0);
     assert_eq!(p.press(Press::Right, 400), Outcome::Nothing);
-    assert_eq!(p.seat(), Core::Gambatte);
+    assert_eq!(p.seat(), Core::Sameboy);
     let mid = p.chip(400 + HOP_MS / 2);
     assert_eq!(mid.seated, None);
     assert!(mid.tip > 0.0, "a chip moving right should lean right");
     let landed = p.chip(400 + HOP_MS);
-    assert_eq!(landed.seated, Some(Core::Gambatte));
+    assert_eq!(landed.seated, Some(Core::Sameboy));
     assert_eq!((landed.across, landed.lift), (1.0, 0.0));
     assert_eq!(
         p.press(Press::Keep, 400 + HOP_MS),
-        Outcome::Write(Core::Gambatte)
+        Outcome::Write(Core::Sameboy)
     );
 }
 
@@ -230,7 +230,7 @@ fn a_game_boy_pair_refuses_left_from_mgba() {
 }
 
 #[test]
-fn a_gba_pair_never_seats_gambatte() {
+fn a_gba_pair_never_seats_sameboy() {
     let mut p = opened_on(Core::pair(Platform::Gba), Core::Mgba, 0);
     p.press(Press::Right, 400);
     assert_eq!(p.seat(), Core::Gpsp);
@@ -243,16 +243,16 @@ fn a_gba_pair_never_seats_gambatte() {
 
 #[test]
 fn the_chip_rests_by_place_in_the_pair() {
-    let gambatte = opened_on(GB, Core::Gambatte, 0).chip(0);
-    assert_eq!(gambatte.seated, Some(Core::Gambatte));
-    assert_eq!(gambatte.across, 1.0);
+    let sameboy = opened_on(GB, Core::Sameboy, 0).chip(0);
+    assert_eq!(sameboy.seated, Some(Core::Sameboy));
+    assert_eq!(sameboy.across, 1.0);
     assert_eq!(opened_on(GB, Core::Mgba, 0).chip(0).across, 0.0);
     assert_eq!(opened_on(GBA, Core::Gpsp, 0).chip(0).across, 1.0);
 }
 
 #[test]
 fn back_mid_hop_on_a_game_boy_pair_turns_back_to_mgba() {
-    let mut p = opened_on(GB, Core::Gambatte, 0);
+    let mut p = opened_on(GB, Core::Sameboy, 0);
     p.press(Press::Left, 400);
     let mid = p.chip(400 + HOP_MS / 2);
     assert!(mid.tip < 0.0, "a chip moving left should lean left");

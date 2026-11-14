@@ -68,35 +68,15 @@ impl GbPalette {
         NAMES[self.index()]
     }
 
-    pub fn gambatte_name(self) -> &'static str {
-        const GBC: [&str; 12] = [
-            "GBC - Brown",
-            "GBC - Red",
-            "GBC - Dark Brown",
-            "GBC - Pastel Mix",
-            "GBC - Orange",
-            "GBC - Yellow",
-            "GBC - Blue",
-            "GBC - Dark Blue",
-            "GBC - Grayscale",
-            "GBC - Green",
-            "GBC - Dark Green",
-            "GBC - Inverted",
-        ];
-        const SGB: [&str; 32] = [
-            "SGB - 1A", "SGB - 1B", "SGB - 1C", "SGB - 1D", "SGB - 1E", "SGB - 1F", "SGB - 1G",
-            "SGB - 1H", "SGB - 2A", "SGB - 2B", "SGB - 2C", "SGB - 2D", "SGB - 2E", "SGB - 2F",
-            "SGB - 2G", "SGB - 2H", "SGB - 3A", "SGB - 3B", "SGB - 3C", "SGB - 3D", "SGB - 3E",
-            "SGB - 3F", "SGB - 3G", "SGB - 3H", "SGB - 4A", "SGB - 4B", "SGB - 4C", "SGB - 4D",
-            "SGB - 4E", "SGB - 4F", "SGB - 4G", "SGB - 4H",
-        ];
+    /// SameBoy renders a monochrome Game Boy through one of four hardware palettes and knows no
+    /// others, so the twelve color and thirty two Super Game Boy entries have no equivalent there.
+    pub fn mono_name(self) -> Option<&'static str> {
         match self.index() {
-            0 => "GBC - Grayscale",
-            1 => "GB - DMG",
-            2 => "GB - Pocket",
-            3 => "GB - Light",
-            i @ 4..=15 => GBC[i - 4],
-            i => SGB[i - 16],
+            0 => Some("greyscale"),
+            1 => Some("lime"),
+            2 => Some("olive"),
+            3 => Some("teal"),
+            _ => None,
         }
     }
 

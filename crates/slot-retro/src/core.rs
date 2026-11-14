@@ -6,6 +6,18 @@ use crate::rumble::Rumble;
 
 pub const GBA_W: u32 = 240;
 pub const GBA_H: u32 = 160;
+/// The biggest frame a GB or GBA core hands over: SameBoy draws a bordered Super Game Boy frame
+/// at 256x224. A core's frame is centred in a canvas of its own size, grown to this if need be,
+/// and that canvas is what the frontend shows.
+pub const SGB_W: u32 = 256;
+pub const SGB_H: u32 = 224;
+
+/// The canvas a frame of this size is drawn on: the platform's own, grown to hold a bigger
+/// picture such as SameBoy's bordered Super Game Boy frame. The frontend shows the canvas, and the
+/// core's frame sits centred in it.
+pub fn canvas_for(picture: (u32, u32)) -> (u32, u32) {
+    (picture.0.max(GBA_W), picture.1.max(GBA_H))
+}
 
 #[derive(Copy, Clone, Default, PartialEq, Eq, Debug)]
 pub struct ButtonMask(pub u16);
@@ -93,6 +105,12 @@ pub trait RetroCore: Send {
     fn set_frame_skip(&mut self, _skip: bool) {}
     fn video_size(&self) -> (u32, u32) {
         (GBA_W, GBA_H)
+    }
+    /// The frame drawn into the buffer `video_xrgb8888` returns, which is a canvas of
+    /// `video_size` with the frame centred in it. Only a core that draws a picture bigger than the
+    /// platform needs reports anything else here.
+    fn video_picture(&self) -> (u32, u32) {
+        self.video_size()
     }
     fn set_touch(&mut self, _at: Option<(u8, u8)>) {}
     fn set_lid(&mut self, _shut: bool) {}

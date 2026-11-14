@@ -36,11 +36,13 @@ pub enum Spot {
     Elsewhere,
 }
 
+/// The byte a peer reads back as the core a player is on. Three is the Game Boy core slot ships,
+/// which is SameBoy here where it was Gambatte before, so the wire stays the same.
 fn core_byte(core: Core) -> u8 {
     match core {
         Core::Mgba => 1,
         Core::Gpsp => 2,
-        Core::Gambatte => 3,
+        Core::Sameboy => 3,
         #[cfg(feature = "nds")]
         Core::Dsperate => 0,
     }
@@ -50,7 +52,7 @@ fn core_from(byte: u8) -> Option<Core> {
     match byte {
         1 => Some(Core::Mgba),
         2 => Some(Core::Gpsp),
-        3 => Some(Core::Gambatte),
+        3 => Some(Core::Sameboy),
         _ => None,
     }
 }

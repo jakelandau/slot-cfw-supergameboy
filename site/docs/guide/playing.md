@@ -30,9 +30,9 @@ Tap <kbd>MENU</kbd> while playing. The game pauses behind it.
 
 ## Picking an emulator
 
-GBA games can use [mGBA](https://mgba.io) or [gpSP](https://github.com/libretro/gpsp). Game Boy and Game Boy Color games can use [Gambatte](https://github.com/libretro/gambatte-libretro) or mGBA. Gambatte is the default on new cards.
+GBA games can use [mGBA](https://mgba.io) or [gpSP](https://github.com/libretro/gpsp). Game Boy and Game Boy Color games can use [SameBoy](https://sameboy.github.io) or mGBA. SameBoy is the default on new cards, and it draws the borders and palettes a Super Game Boy cart asks for.
 
-On the shelf, press <kbd>START</kbd> on a GBA, GBC or GB cart. It opens to show the circuit board with a chip in one of two sockets. <kbd>Left</kbd> puts it on mGBA, <kbd>Right</kbd> on gpSP or gambatte (GB/C Only). <kbd>A</kbd> saves your choice, <kbd>B</kbd> backs out.
+On the shelf, press <kbd>START</kbd> on a GBA, GBC or GB cart. It opens to show the circuit board with a chip in one of two sockets. <kbd>Left</kbd> puts it on mGBA, <kbd>Right</kbd> on gpSP or SameBoy (GB/C Only). <kbd>A</kbd> saves your choice, <kbd>B</kbd> backs out.
 
 slot remembers the choice per game.
 
@@ -40,7 +40,7 @@ Which should you use?
 
 - mGBA is more accurate but at the expense of using more resources.
 - gpSP is faster but less accurate. It's also the one that does the wireless adapter for Pokémon trading. See [Linking Up](linking.md).
-- gambatte is extremely popular and accurate for GB/C. Link play is currently not supported in gambatte.
+- SameBoy is cycle accurate for GB/C. Link play is currently not supported in SameBoy.
 
 !!! warning "Save states belong to a core"
 

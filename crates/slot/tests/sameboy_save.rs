@@ -50,13 +50,13 @@ fn show(label: &str, sav: &[u8]) {
 }
 
 #[test]
-fn mgba_crystal_save_loads_in_gambatte() {
+fn mgba_crystal_save_loads_in_sameboy() {
     let _g = common::core_lock();
     let mgba = vendor("mgba_libretro.dylib");
-    let gambatte = vendor("gambatte_libretro.dylib");
+    let sameboy = vendor("sameboy_libretro.dylib");
     let card_rom = common::repo_root().join("sdcard/Games/GBC/Pokemon - Crystal Version (USA).gbc");
     let card_sav = common::repo_root().join("sdcard/Saves/GBC/Pokemon - Crystal Version (USA).sav");
-    if !mgba.exists() || !gambatte.exists() || !card_rom.exists() || !card_sav.exists() {
+    if !mgba.exists() || !sameboy.exists() || !card_rom.exists() || !card_sav.exists() {
         eprintln!("no host cores or no Pokemon Crystal on the card, skipping");
         return;
     }
@@ -78,11 +78,11 @@ fn mgba_crystal_save_loads_in_gambatte() {
     show("mgba", &from_mgba);
 
     let started = std::time::Instant::now();
-    let from_gambatte = run_core(&gambatte, dir.path(), &rom, &from_mgba, 600);
-    eprintln!("gambatte ran 600 frames in {:?}", started.elapsed());
-    show("gambatte", &from_gambatte);
+    let from_sameboy = run_core(&sameboy, dir.path(), &rom, &from_mgba, 600);
+    eprintln!("sameboy ran 600 frames in {:?}", started.elapsed());
+    show("sameboy", &from_sameboy);
 
-    let back = run_core(&mgba, dir.path(), &rom, &from_gambatte, 600);
+    let back = run_core(&mgba, dir.path(), &rom, &from_sameboy, 600);
     show("mgba again", &back);
 
     assert_eq!(
@@ -91,14 +91,14 @@ fn mgba_crystal_save_loads_in_gambatte() {
         "mGBA changed the save ram on a title screen run"
     );
     assert_eq!(
-        from_gambatte[..SRAM],
+        from_sameboy[..SRAM],
         from_mgba[..SRAM],
-        "Gambatte did not keep mGBA's save ram"
+        "SameBoy did not keep mGBA's save ram"
     );
     assert_eq!(
         back[..SRAM],
-        from_gambatte[..SRAM],
-        "mGBA did not keep Gambatte's save ram"
+        from_sameboy[..SRAM],
+        "mGBA did not keep SameBoy's save ram"
     );
 }
 
@@ -121,10 +121,10 @@ fn mgba_clock_at(tail: &[u8], at: u64) -> i64 {
 fn crystal_clock_survives_a_core_round_trip() {
     let _g = common::core_lock();
     let mgba = vendor("mgba_libretro.dylib");
-    let gambatte = vendor("gambatte_libretro.dylib");
+    let sameboy = vendor("sameboy_libretro.dylib");
     let card_rom = common::repo_root().join("sdcard/Games/GBC/Pokemon - Crystal Version (USA).gbc");
     let card_sav = common::repo_root().join("sdcard/Saves/GBC/Pokemon - Crystal Version (USA).sav");
-    if !mgba.exists() || !gambatte.exists() || !card_rom.exists() || !card_sav.exists() {
+    if !mgba.exists() || !sameboy.exists() || !card_rom.exists() || !card_sav.exists() {
         eprintln!("no host cores or no Pokemon Crystal on the card, skipping");
         return;
     }
@@ -140,13 +140,13 @@ fn crystal_clock_survives_a_core_round_trip() {
     }
     sav.extend_from_slice(&start.to_le_bytes());
 
-    eprintln!("gambatte");
-    let from_gambatte = run_core(&gambatte, dir.path(), &rom, &sav, BEFORE_CLEAR_CLOCK);
-    eprintln!("  after, tail: {}", hex(&from_gambatte[SRAM..]));
-    assert_eq!(from_gambatte.len(), SRAM + 8);
+    eprintln!("sameboy");
+    let from_sameboy = run_core(&sameboy, dir.path(), &rom, &sav, BEFORE_CLEAR_CLOCK);
+    eprintln!("  after, tail: {}", hex(&from_sameboy[SRAM..]));
+    assert_eq!(from_sameboy.len(), SRAM + 32);
 
     eprintln!("mgba");
-    let back = run_core(&mgba, dir.path(), &rom, &from_gambatte, BEFORE_CLEAR_CLOCK);
+    let back = run_core(&mgba, dir.path(), &rom, &from_sameboy, BEFORE_CLEAR_CLOCK);
     let end = unix_now();
     eprintln!("  after, tail: {}", hex(&back[SRAM..]));
     assert_eq!(back.len(), SRAM + 48);

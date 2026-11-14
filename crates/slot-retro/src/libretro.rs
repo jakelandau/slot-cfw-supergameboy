@@ -7,7 +7,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use libloading::Library;
 
-use crate::core::{AvInfo, ButtonMask, CoreError, RetroCore, GBA_H, GBA_W};
+use crate::core::{canvas_for, AvInfo, ButtonMask, CoreError, RetroCore, GBA_H, GBA_W};
 use crate::ffi::*;
 use crate::link::Link;
 use crate::rumble::Rumble;
@@ -24,6 +24,11 @@ enum PixelFormat {
 
 struct Host {
     video: Vec<u8>,
+    /// The frame the core draws, and the canvas holding it: the frame centred in a canvas of the
+    /// core's own size, grown to the largest a GB or GBA core needs. `video` is sized to the
+    /// canvas, and the canvas is what `video_size` reports.
+    picture: (u32, u32),
+    canvas: (u32, u32),
     format: PixelFormat,
     audio: Vec<i16>,
     inputs: [u16; 2],
@@ -177,6 +182,38 @@ unsafe extern "C" fn environment(cmd: c_uint, data: *mut c_void) -> bool {
             }
             with_host(|h| h.declared = list).is_some()
         }
+        SET_GEOMETRY => {
+            if data.is_null() {
+                return false;
+            }
+            let geometry = &*(data as *const GameGeometry);
+            with_host(|h| {
+                let picture = (geometry.base_width, geometry.base_height);
+                let canvas = canvas_for(picture);
+                if canvas != h.canvas {
+                    h.canvas = canvas;
+                    h.video = vec![0; (canvas.0 * canvas.1 * 4) as usize];
+                }
+                h.picture = picture;
+            })
+            .is_some()
+        }
+        GET_GEOMETRY => {
+            if data.is_null() {
+                return false;
+            }
+            with_host(|h| {
+                let canvas = h.canvas;
+                *(data as *mut GameGeometry) = GameGeometry {
+                    base_width: h.picture.0,
+                    base_height: h.picture.1,
+                    max_width: canvas.0,
+                    max_height: canvas.1,
+                    aspect_ratio: h.picture.0 as f32 / h.picture.1 as f32,
+                };
+            })
+            .is_some()
+        }
         GET_RUMBLE_INTERFACE => {
             if data.is_null() {
                 return false;
@@ -318,16 +355,17 @@ unsafe extern "C" fn video_refresh(
         return;
     }
     with_host(|h| {
-        let cols = width.min(GBA_W) as usize;
-        let rows = height.min(GBA_H) as usize;
-        let ox = (GBA_W as usize - cols) / 2;
-        let oy = (GBA_H as usize - rows) / 2;
-        if cols != GBA_W as usize || rows != GBA_H as usize {
+        let (cw, ch) = (h.canvas.0 as usize, h.canvas.1 as usize);
+        let cols = (width as usize).min(cw);
+        let rows = (height as usize).min(ch);
+        let ox = (cw - cols) / 2;
+        let oy = (ch - rows) / 2;
+        if cols != cw || rows != ch {
             h.video.fill(0);
         }
         for y in 0..rows {
             let src = (data as *const u8).add(y * pitch);
-            let row = ((y + oy) * GBA_W as usize + ox) * 4;
+            let row = ((y + oy) * cw + ox) * 4;
             match h.format {
                 PixelFormat::Xrgb8888 => {
                     ptr::copy_nonoverlapping(src, h.video.as_mut_ptr().add(row), cols * 4);
@@ -485,6 +523,8 @@ impl LibretroCore {
         }
         let mut host = Box::new(Host {
             video: vec![0; VIDEO_BYTES],
+            picture: (GBA_W, GBA_H),
+            canvas: (GBA_W, GBA_H),
             format: PixelFormat::Xrgb8888,
             audio: Vec::new(),
             inputs: [0; 2],
@@ -526,6 +566,20 @@ impl LibretroCore {
             state_size: None,
             _lib: lib,
         })
+    }
+
+    /// Take the size of the frame the core draws, and grow the canvas that holds it if need be.
+    fn set_picture(&mut self, w: u32, h: u32) {
+        if w == 0 || h == 0 {
+            return;
+        }
+        self.host.picture = (w, h);
+        let canvas = canvas_for((w, h));
+        if canvas == self.host.canvas {
+            return;
+        }
+        self.host.canvas = canvas;
+        self.host.video = vec![0; (canvas.0 * canvas.1 * 4) as usize];
     }
 
     fn unload(&mut self) {
@@ -611,6 +665,7 @@ impl RetroCore for LibretroCore {
             fps: av.timing.fps,
             sample_rate: av.timing.sample_rate,
         };
+        self.set_picture(av.geometry.base_width, av.geometry.base_height);
         unsafe { (self.api.set_controller_port_device)(0, DEVICE_JOYPAD) };
         Ok(())
     }
@@ -715,6 +770,14 @@ impl RetroCore for LibretroCore {
         self.av
     }
 
+    fn video_size(&self) -> (u32, u32) {
+        self.host.canvas
+    }
+
+    fn video_picture(&self) -> (u32, u32) {
+        self.host.picture
+    }
+
     fn rumble(&self) -> Rumble {
         self.host.rumble.clone()
     }
@@ -749,6 +812,8 @@ mod tests {
     fn host_with(options: HashMap<String, CString>, options_dirty: bool) -> Box<Host> {
         Box::new(Host {
             video: vec![0; VIDEO_BYTES],
+            picture: (GBA_W, GBA_H),
+            canvas: (GBA_W, GBA_H),
             format: PixelFormat::Xrgb8888,
             audio: Vec::new(),
             inputs: [0; 2],

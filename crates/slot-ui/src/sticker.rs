@@ -47,7 +47,7 @@ pub const CREDITS: [&str; 12] = [
     "THE EXQUISITE SKEUOMORPHIC",
     "ARTWORK MADE BY MARKUS.",
     "EMULATION POWERED BY MGBA,",
-    "GPSP AND GAMBATTE.",
+    "GPSP AND SAMEBOY.",
     "UNDERLYING OS IS",
     "BASEOS BY PVAIBHAV. TYPE IS",
     "OPEN SANS AND NERD FONTS",
@@ -384,7 +384,7 @@ const DS_PANEL_H: u32 = 122;
 const DS_CASED_TRACKING: f32 = 0.3;
 
 pub const DS_CREDITS: &str = "The exquisite skeuomorphic artwork made by Markus. \
-Emulation powered by DSperate, mGBA, gpSP and Gambatte. Type is Open Sans and Nerd \
+Emulation powered by DSperate, mGBA, gpSP and SameBoy. Type is Open Sans and Nerd \
 Fonts Symbols by Ryan L McIntyre. The panel mask is derived from Gigaherz's LCD3x. \
 The cart sounds are my childhood Game\u{a0}Boy and my adulthood DS\u{a0}Lite.";
 

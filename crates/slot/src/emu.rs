@@ -177,8 +177,7 @@ impl EmuHandle {
 
     /// The frame the core draws, learned once it has loaded.
     pub fn video_picture(&self) -> (u32, u32) {
-        let packed = self.shared.picture.load(Ordering::Relaxed);
-        ((packed >> 16) as u32, packed as u32)
+        unpack_picture(self.shared.picture.load(Ordering::Relaxed))
     }
 
     pub fn refuse_save_ram(&self) {
@@ -1133,6 +1132,10 @@ fn pack_picture((w, h): (u32, u32)) -> u64 {
     (u64::from(w) << 16) | u64::from(h)
 }
 
+fn unpack_picture(packed: u64) -> (u32, u32) {
+    ((packed >> 16) as u32, (packed & 0xffff) as u32)
+}
+
 fn pack_touch(at: Option<(u8, u8)>) -> u32 {
     at.map_or(NO_TOUCH, |(x, y)| (x as u32) << 8 | y as u32)
 }
@@ -1288,6 +1291,14 @@ mod tests {
         };
         assert_eq!(cost.span(ms(11.9), 6), 2);
         assert!(frames_in(&cost, ms(11.9) + PRESENT, 12) >= 5);
+    }
+
+    #[test]
+    fn a_picture_survives_the_packing_the_worker_shares_it_in() {
+        for picture in [(240, 160), (160, 144), (256, 224), (0, 0), (65_535, 65_535)] {
+            assert_eq!(unpack_picture(pack_picture(picture)), picture);
+        }
+        assert_eq!(unpack_picture(pack_picture((240, 160))), (240, 160));
     }
 
     #[test]

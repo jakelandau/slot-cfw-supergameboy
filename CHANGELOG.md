@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## [1.16.0](https://github.com/jakelandau/slot-cfw-supergameboy/releases/tag/v1.16.0)
 
 - SameBoy replaces Gambatte as the Game Boy and Game Boy Color core. Super Game Boy carts now show the borders and palettes the original hardware drew, as a 256x224 picture. Saves carry over from Gambatte, clock and all; save states do not. Press START on a Game Boy cart to switch between mGBA and SameBoy.
 - A custom Game Boy boot ROM now goes in `BIOS` as `dmg_boot.bin` and `cgb_boot.bin`, the names SameBoy reads. Without one, SameBoy's builtin boot ROMs run.

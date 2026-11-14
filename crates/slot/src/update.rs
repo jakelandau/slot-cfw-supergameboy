@@ -146,8 +146,17 @@ fn parts(v: &str) -> Option<Vec<u64>> {
     v.split('.').map(|p| p.parse().ok()).collect()
 }
 
+/// This fork tags its releases `v1.16.1-supergameboy`, so the suffix comes off before versions are
+/// compared. Any other suffix, a prerelease's included, still means the version cannot be ordered
+/// and so is never offered.
+const TAG_SUFFIX: &str = "-supergameboy";
+
+fn untagged(v: &str) -> &str {
+    v.strip_suffix(TAG_SUFFIX).unwrap_or(v)
+}
+
 pub fn newer(release: &str, running: &str) -> bool {
-    match (parts(release), parts(running)) {
+    match (parts(untagged(release)), parts(untagged(running))) {
         (Some(r), Some(c)) => r > c,
         _ => false,
     }
@@ -303,8 +312,11 @@ impl<R: Read> Read for Stoppable<R> {
 }
 
 pub const WIFI_CONF: &str = "Config/wifi.conf";
-pub const LATEST: &str = "https://slot-cfw.fyi/versions.json";
-const RELEASES: &str = "https://github.com/slot-cfw/slot/releases/download";
+/// This fork updates from its own releases: every release carries a `versions.json` asset,
+/// which GitHub always serves from the newest one.
+pub const LATEST: &str =
+    "https://github.com/jakelandau/slot-cfw-supergameboy/releases/latest/download/versions.json";
+const RELEASES: &str = "https://github.com/jakelandau/slot-cfw-supergameboy/releases/download";
 const BASEOS_RELEASES: &str = "https://github.com/pvaibhav/BaseOS/releases/download";
 
 #[derive(Debug, Clone, Copy)]

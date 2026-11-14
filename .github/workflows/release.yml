@@ -108,7 +108,24 @@ jobs:
           gh release create "$GITHUB_REF_NAME" "$ZIP" --repo "$GITHUB_REPOSITORY" \
             --title "$GITHUB_REF_NAME" --notes-file notes.md
 
-      - name: Publish versions.json with the site
+      # The device checks this file for updates: it rides on the newest release, which GitHub
+      # always serves, and it names this release's zip, its size and its digest.
+      - name: Attach versions.json for the updater
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh workflow run pages.yml --repo "$GITHUB_REPOSITORY" --ref main
+          SLOT_REPO: ${{ github.repository }}
+        run: |
+          set -eu
+          mkdir -p site/public
+          for attempt in 1 2 3; do
+            if OUT=site/public/versions.json bash .github/scripts/versions.sh; then
+              break
+            fi
+            if [ "$attempt" = 3 ]; then
+              exit 1
+            fi
+            echo "::warning::versions.json not ready, retrying"
+            sleep 10
+          done
+          gh release upload "$GITHUB_REF_NAME" site/public/versions.json \
+            --repo "$GITHUB_REPOSITORY" --clobber

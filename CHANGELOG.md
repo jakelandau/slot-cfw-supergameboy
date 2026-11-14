@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.16.1](https://github.com/jakelandau/slot-cfw-supergameboy/releases/tag/v1.16.1-supergameboy)
+
+- Update over Wi-Fi now offers this fork's releases instead of upstream slot's. Each release carries the `versions.json` the device reads, and its zip is downloaded from this repository, so a card on `v1.16.1-supergameboy` sees `v1.16.2-supergameboy` when it lands.
+- Versions carry the fork's `-supergameboy` suffix, and comparing them still puts `1.16.1-supergameboy` above `1.16.0-supergameboy`. A prerelease still never offers itself.
+
 ## [1.16.0](https://github.com/jakelandau/slot-cfw-supergameboy/releases/tag/v1.16.0-supergameboy)
 
 - SameBoy replaces Gambatte as the Game Boy and Game Boy Color core. Super Game Boy carts now show the borders and palettes the original hardware drew, as a 256x224 picture. Saves carry over from Gambatte, clock and all; save states do not. Press START on a Game Boy cart to switch between mGBA and SameBoy.

@@ -166,7 +166,7 @@ fn parse_release_reads_the_version_url_and_digest() {
     assert_eq!(r.version, "1.11.0");
     assert_eq!(
         r.url,
-        "https://github.com/slot-cfw/slot/releases/download/v1.11.0/slot-v1.11.0-h700.zip"
+        "https://github.com/jakelandau/slot-cfw-supergameboy/releases/download/v1.11.0/slot-v1.11.0-h700.zip"
     );
     assert_eq!(r.size, 6919551);
     assert_eq!(&r.sha256[..2], &[0xe7, 0x8b]);
@@ -199,6 +199,33 @@ fn newer_compares_numerically() {
     assert!(!newer("1.11.0", "1.11.0"));
     assert!(!newer("1.11.0", "1.12.0"));
     assert!(!newer("1.12.0-rc1", "1.11.0"));
+}
+
+#[test]
+fn newer_reads_the_versions_this_fork_tags() {
+    assert!(newer("1.16.1-supergameboy", "1.16.0-supergameboy"));
+    assert!(!newer("1.16.0-supergameboy", "1.16.0-supergameboy"));
+    assert!(newer("1.16.1-supergameboy", "1.15.3"));
+    assert!(!newer("1.16.0", "1.16.0-supergameboy"));
+    assert!(
+        !newer("1.16.1-rc1-supergameboy", "1.16.0-supergameboy"),
+        "a prerelease is still not offered"
+    );
+}
+
+#[test]
+fn parse_release_reads_a_release_tagged_for_this_fork() {
+    let json = release_json(
+        "v1.16.1-supergameboy",
+        "slot-v1.16.1-supergameboy-h700.zip",
+        "e78b27a5a10ba0b5f0fcb0e4ee5f3fbbd9f1c1b2a9d2f3e4c5b6a7d8e9f0a1b2",
+    );
+    let r = parse_release(&json, Device::H700).expect("a fork release");
+    assert_eq!(r.version, "1.16.1-supergameboy");
+    assert_eq!(
+        r.url,
+        "https://github.com/jakelandau/slot-cfw-supergameboy/releases/download/v1.16.1-supergameboy/slot-v1.16.1-supergameboy-h700.zip"
+    );
 }
 
 #[test]
@@ -717,7 +744,7 @@ fn parse_release_gives_the_ds_plus_its_own_zip() {
     assert_eq!(r.version, "1.11.0");
     assert_eq!(
         r.url,
-        "https://github.com/slot-cfw/slot/releases/download/v1.11.0/slot-v1.11.0-rgdsplus.zip"
+        "https://github.com/jakelandau/slot-cfw-supergameboy/releases/download/v1.11.0/slot-v1.11.0-rgdsplus.zip"
     );
     assert_eq!(r.size, 8000000);
     assert_eq!(&r.sha256[..2], &[0xaa, 0x8b]);

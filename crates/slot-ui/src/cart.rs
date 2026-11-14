@@ -411,7 +411,7 @@ pub fn cart_face_with(cart: &Cart, art: Option<Vec<u8>>) -> CartFace {
         }
     }
     let mut face = shell_face(&s, &shell_for(cart));
-    let mut label = match art {
+    let label = match art {
         Some(rgba) => rgba,
         #[cfg(feature = "nds")]
         None if cart.platform == Platform::Nds => banner_label(&s, cart),

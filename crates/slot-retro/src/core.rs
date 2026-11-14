@@ -6,15 +6,9 @@ use crate::rumble::Rumble;
 
 pub const GBA_W: u32 = 240;
 pub const GBA_H: u32 = 160;
-/// The biggest frame a GB or GBA core hands over: SameBoy draws a bordered Super Game Boy frame
-/// at 256x224. A core's frame is centred in a canvas of its own size, grown to this if need be,
-/// and that canvas is what the frontend shows.
-pub const SGB_W: u32 = 256;
-pub const SGB_H: u32 = 224;
-
-/// The canvas a frame of this size is drawn on: the platform's own, grown to hold a bigger
-/// picture such as SameBoy's bordered Super Game Boy frame. The frontend shows the canvas, and the
-/// core's frame sits centred in it.
+/// The canvas a frame of this size is drawn on: the platform's own 240x160, grown to hold a bigger
+/// picture such as SameBoy's bordered 256x224 Super Game Boy frame. The frontend shows the canvas,
+/// and the core's frame sits centred in it.
 pub fn canvas_for(picture: (u32, u32)) -> (u32, u32) {
     (picture.0.max(GBA_W), picture.1.max(GBA_H))
 }

@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.16.3](https://github.com/jakelandau/slot-cfw-supergameboy/releases/tag/v1.16.3-supergameboy)
+
+- The boot log names the build it is running, version, commit and date, before anything else. Two rounds of chasing a black screen were spent on cards that were not running the binary that had just been built, and a log now says which build it came from.
+- Carries 1.16.2's fix: the running core's picture was read back from its packed form without masking the height, so a 240x160 screen became 240x15728800, the game texture refused every frame and the layout drew a sliver. Game Boy, Game Boy Color and Game Boy Advance draw again.
+
 ## [1.16.2](https://github.com/jakelandau/slot-cfw-supergameboy/releases/tag/v1.16.2-supergameboy)
 
 - Games draw again on the device. The running core's picture was read back from its packed form without masking the height, so a 240x160 screen became 240x15728800: the game texture was refused every frame and the layout drew a sliver. Every core and every system showed black with the audio still playing. Game Boy, Game Boy Color and Game Boy Advance all draw again.

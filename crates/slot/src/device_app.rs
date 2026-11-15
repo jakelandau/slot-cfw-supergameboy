@@ -20,6 +20,7 @@ const LOG_SYNC: Duration = Duration::from_secs(1);
 
 pub fn run() {
     slot::boot_time::mark("start");
+    slot::boot_time::identify();
     let _ = std::thread::Builder::new()
         .name("slot-fonts".into())
         .spawn(slot_ui::warm_fonts);
